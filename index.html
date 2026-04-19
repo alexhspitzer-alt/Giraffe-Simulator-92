@@ -176,27 +176,37 @@
       return m;
     }
 
-    function makeGraze() {
+    function makeGraze(neckDrop = 2, neckForward = 1, headBob = 0) {
       const m = clone(base);
+
+      // Clear neck/head source region first so we can remap cleanly.
       for (let r = 0; r < 12; r++) {
         for (let c = 15; c < 23; c++) {
-          if (base[r][c]) {
-            setPx(m, r, c, 0);
-            setPx(m, r + 2, c + 1, base[r][c]);
-          }
+          setPx(m, r, c, 0);
         }
       }
-      setPx(m, 6, 22, 1);
-      setPx(m, 7, 22, 1);
-      setPx(m, 2, 21, 0);
-      setPx(m, 3, 21, 0);
+
+      // Move neck/head block downward + forward for grazing.
+      for (let r = 0; r < 12; r++) {
+        for (let c = 15; c < 23; c++) {
+          const v = base[r][c];
+          if (!v) continue;
+          setPx(m, r + neckDrop + headBob, c + neckForward, v);
+        }
+      }
+
+      // Extra muzzle extension to make the head silhouette obvious.
+      setPx(m, 8 + headBob, 23, 1);
+      setPx(m, 9 + headBob, 23, 1);
+      setPx(m, 9 + headBob, 24, 1);
+
       return m;
     }
 
     const animations = {
       idle: [base],
       walk: [makeWalkA(), makeWalkB()],
-      graze: [makeGraze(), makeGraze()]
+      graze: [makeGraze(2, 1, 0), makeGraze(2, 1, 1)]
     };
 
     const palette = {
