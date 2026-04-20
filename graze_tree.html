@@ -70,11 +70,12 @@
 
     <section class="controls">
       <label for="scale">Scale</label>
-      <input id="scale" type="number" min="1" max="18" value="1" />
+      <input id="scale" type="number" min="1" max="18" value="5" />
       <label for="fps">FPS</label>
       <input id="fps" type="number" min="1" max="12" value="4" />
       <button id="toggle">Pause</button>
       <button id="walkRight">Walk Right</button>
+      <button id="walkLeft">Walk Left</button>
     </section>
   </main>
 
@@ -136,6 +137,7 @@
     const fpsInput = document.getElementById('fps');
     const toggle = document.getElementById('toggle');
     const walkRightBtn = document.getElementById('walkRight');
+    const walkLeftBtn = document.getElementById('walkLeft');
 
     const clone = (m) => m.map((row) => [...row]);
     const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
@@ -195,7 +197,7 @@
     let frame = 0;
     let last = 0;
     let treeOffset = 0;
-    let walkingRight = false;
+    let movementMode = 'graze'; // graze | right | left
 
     function drawMatrix(matrix, xOff, yOff, scale, colors) {
       for (let r = 0; r < matrix.length; r++) {
@@ -208,11 +210,39 @@
       }
     }
 
+    function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, rotate180 = false) {
+      const width = matrix[0].length * scale;
+      const height = matrix.length * scale;
+      const px = xOff * scale;
+      const py = yOff * scale;
+
+      if (!rotate180) {
+        drawMatrix(matrix, xOff, yOff, scale, colors);
+        return;
+      }
+
+      ctx.save();
+      ctx.translate(px + width / 2, py + height / 2);
+      ctx.rotate(Math.PI);
+      ctx.translate(-width / 2, -height / 2);
+
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+          const v = matrix[r][c];
+          if (!v) continue;
+          ctx.fillStyle = colors[v];
+          ctx.fillRect(c * scale, r * scale, scale, scale);
+        }
+      }
+      ctx.restore();
+    }
+
     function render(ts) {
-      const scale = Math.max(1, Math.min(18, Number(scaleInput.value) || 1));
+      const scale = Math.max(1, Math.min(18, Number(scaleInput.value) || 5));
       const fps = Math.max(1, Math.min(12, Number(fpsInput.value) || 4));
       const frameTime = 1000 / fps;
-      const activeFrames = walkingRight ? walkFrames : grazeFrames;
+      const moving = movementMode === 'right' || movementMode === 'left';
+      const activeFrames = moving ? walkFrames : grazeFrames;
 
       if (playing && ts - last >= frameTime) {
         frame = (frame + 1) % activeFrames.length;
@@ -225,7 +255,7 @@
       scene.height = rows * scale;
       ctx.clearRect(0, 0, scene.width, scene.height);
 
-      if (playing && walkingRight) {
+      if (playing && moving) {
         treeOffset -= 0.2;
       }
 
@@ -235,7 +265,7 @@
         drawMatrix(tree, startX + i * tilePeriod, 6, scale, palette.tree);
       }
 
-      drawMatrix(activeFrames[frame], 10, 12, scale, palette.giraffe);
+      drawMatrixTransformed(activeFrames[frame], 10, 12, scale, palette.giraffe, movementMode === 'left');
 
       requestAnimationFrame(render);
     }
@@ -246,8 +276,16 @@
     });
 
     walkRightBtn.addEventListener('click', () => {
-      walkingRight = !walkingRight;
-      walkRightBtn.textContent = walkingRight ? 'Stop Walking' : 'Walk Right';
+      movementMode = movementMode === 'right' ? 'graze' : 'right';
+      walkRightBtn.textContent = movementMode === 'right' ? 'Stop Right' : 'Walk Right';
+      walkLeftBtn.textContent = 'Walk Left';
+      frame = 0;
+    });
+
+    walkLeftBtn.addEventListener('click', () => {
+      movementMode = movementMode === 'left' ? 'graze' : 'left';
+      walkLeftBtn.textContent = movementMode === 'left' ? 'Stop Left' : 'Walk Left';
+      walkRightBtn.textContent = 'Walk Right';
       frame = 0;
     });
 
