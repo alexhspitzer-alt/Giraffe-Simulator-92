@@ -262,9 +262,11 @@
       }
 
       const tilePeriod = tree[0].length;
-      const startX = 42 + (treeOffset % tilePeriod);
-      for (let i = -1; i <= 3; i++) {
-        drawMatrix(tree, startX + i * tilePeriod, 6, scale, palette.tree);
+      const baseTreeX = 42 + treeOffset;
+      const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
+      const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
+      for (let k = kStart; k <= kEnd; k++) {
+        drawMatrix(tree, baseTreeX + k * tilePeriod, 6, scale, palette.tree);
       }
 
       drawMatrixTransformed(activeFrames[frame], 10, 12, scale, palette.giraffe, movementMode === 'left');
