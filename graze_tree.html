@@ -74,6 +74,7 @@
       <label for="fps">FPS</label>
       <input id="fps" type="number" min="1" max="12" value="4" />
       <button id="toggle">Pause</button>
+      <button id="walkRight">Walk Right</button>
     </section>
   </main>
 
@@ -134,9 +135,36 @@
     const scaleInput = document.getElementById('scale');
     const fpsInput = document.getElementById('fps');
     const toggle = document.getElementById('toggle');
+    const walkRightBtn = document.getElementById('walkRight');
 
     const clone = (m) => m.map((row) => [...row]);
     const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
+
+    function makeWalkA() {
+      const m = clone(giraffe);
+      for (let r = 19; r <= 24; r++) {
+        m[r - 1][22] = m[r][22];
+        m[r - 1][23] = m[r][23];
+      }
+      setPx(m, 24, 22, 0);
+      setPx(m, 24, 23, 0);
+      setPx(m, 19, 22, 1);
+      setPx(m, 24, 7, 0);
+      return m;
+    }
+
+    function makeWalkB() {
+      const m = clone(giraffe);
+      for (let r = 19; r <= 24; r++) {
+        m[r - 1][6] = m[r][6];
+        m[r - 1][7] = m[r][7];
+      }
+      setPx(m, 24, 6, 0);
+      setPx(m, 24, 7, 0);
+      setPx(m, 19, 8, 1);
+      setPx(m, 24, 23, 0);
+      return m;
+    }
 
     function makeGraze(headBob = 0) {
       const m = clone(giraffe);
@@ -156,6 +184,7 @@
     }
 
     const grazeFrames = [makeGraze(0), makeGraze(1)];
+    const walkFrames = [makeWalkA(), makeWalkB()];
 
     const palette = {
       giraffe: {1: '#E2B24A', 2: '#8A4E1F'},
@@ -165,6 +194,8 @@
     let playing = true;
     let frame = 0;
     let last = 0;
+    let treeOffset = 0;
+    let walkingRight = false;
 
     function drawMatrix(matrix, xOff, yOff, scale, colors) {
       for (let r = 0; r < matrix.length; r++) {
@@ -181,9 +212,10 @@
       const scale = Math.max(6, Math.min(18, Number(scaleInput.value) || 10));
       const fps = Math.max(1, Math.min(12, Number(fpsInput.value) || 4));
       const frameTime = 1000 / fps;
+      const activeFrames = walkingRight ? walkFrames : grazeFrames;
 
       if (playing && ts - last >= frameTime) {
-        frame = (frame + 1) % grazeFrames.length;
+        frame = (frame + 1) % activeFrames.length;
         last = ts;
       }
 
@@ -193,8 +225,17 @@
       scene.height = rows * scale;
       ctx.clearRect(0, 0, scene.width, scene.height);
 
-      drawMatrix(tree, 42, 6, scale, palette.tree);
-      drawMatrix(grazeFrames[frame], 10, 12, scale, palette.giraffe);
+      if (playing && walkingRight) {
+        treeOffset -= 0.2;
+      }
+
+      const tilePeriod = tree[0].length;
+      const startX = 42 + (treeOffset % tilePeriod);
+      for (let i = -1; i <= 3; i++) {
+        drawMatrix(tree, startX + i * tilePeriod, 6, scale, palette.tree);
+      }
+
+      drawMatrix(activeFrames[frame], 10, 12, scale, palette.giraffe);
 
       requestAnimationFrame(render);
     }
@@ -202,6 +243,12 @@
     toggle.addEventListener('click', () => {
       playing = !playing;
       toggle.textContent = playing ? 'Pause' : 'Play';
+    });
+
+    walkRightBtn.addEventListener('click', () => {
+      walkingRight = !walkingRight;
+      walkRightBtn.textContent = walkingRight ? 'Stop Walking' : 'Walk Right';
+      frame = 0;
     });
 
     requestAnimationFrame(render);
