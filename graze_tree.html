@@ -255,8 +255,10 @@
       scene.height = rows * scale;
       ctx.clearRect(0, 0, scene.width, scene.height);
 
-      if (playing && moving) {
+      if (playing && movementMode === 'right') {
         treeOffset -= 0.2;
+      } else if (playing && movementMode === 'left') {
+        treeOffset += 0.2;
       }
 
       const tilePeriod = tree[0].length;
