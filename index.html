@@ -107,7 +107,7 @@
       </select>
 
       <label for="scale">Scale</label>
-      <input id="scale" type="number" min="6" max="24" value="12" />
+      <input id="scale" type="number" min="1" max="24" value="1" />
 
       <label for="fps">FPS</label>
       <input id="fps" type="number" min="1" max="12" value="4" />
@@ -243,7 +243,7 @@
     function tick(ts) {
       const mode = animSel.value;
       const frames = animations[mode];
-      const scale = Math.max(6, Math.min(24, Number(scaleInput.value) || 12));
+      const scale = Math.max(1, Math.min(24, Number(scaleInput.value) || 1));
       const fps = Math.max(1, Math.min(12, Number(fpsInput.value) || 4));
       const frameTime = 1000 / fps;
 
@@ -269,10 +269,10 @@
     stepBtn.addEventListener('click', () => {
       const frames = animations[animSel.value];
       frameIdx = (frameIdx + 1) % frames.length;
-      drawFrame(frames[frameIdx], Number(scaleInput.value) || 12);
+      drawFrame(frames[frameIdx], Number(scaleInput.value) || 1);
     });
 
-    drawFrame(base, 12);
+    drawFrame(base, 1);
     requestAnimationFrame(tick);
   </script>
 </body>
