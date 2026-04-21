@@ -104,6 +104,7 @@
         <option value="idle">Idle</option>
         <option value="walk" selected>Walk</option>
         <option value="graze">Graze</option>
+        <option value="tree">Tree Scene</option>
       </select>
 
       <label for="scale">Scale</label>
@@ -205,9 +206,37 @@
       graze: [makeGraze(2, 1, 0), makeGraze(2, 1, 1)]
     };
 
+    const tree = [
+      [0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0],
+      [0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0],
+      [0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0],
+      [0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
     const palette = {
       1: '#E2B24A',
       2: '#8A4E1F'
+    };
+
+    const treePalette = {
+      1: '#6C4A2D',
+      2: '#5A9E46'
     };
 
     const canvas = document.getElementById('sprite');
@@ -240,9 +269,34 @@
       }
     }
 
+    function drawTreeScene(giraffeFrame, scale) {
+      const sceneCols = 70;
+      const sceneRows = 40;
+      canvas.width = sceneCols * scale;
+      canvas.height = sceneRows * scale;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const drawLayer = (matrix, xOff, yOff, colors) => {
+        for (let r = 0; r < matrix.length; r++) {
+          for (let c = 0; c < matrix[0].length; c++) {
+            const v = matrix[r][c];
+            if (!v) continue;
+            ctx.fillStyle = colors[v];
+            ctx.fillRect((xOff + c) * scale, (yOff + r) * scale, scale, scale);
+          }
+        }
+      };
+
+      const tilePeriod = tree[0].length;
+      for (let x = 38; x < sceneCols + tilePeriod; x += tilePeriod) {
+        drawLayer(tree, x, 6, treePalette);
+      }
+      drawLayer(giraffeFrame, 10, 12, palette);
+    }
+
     function tick(ts) {
       const mode = animSel.value;
-      const frames = animations[mode];
+      const frames = mode === 'tree' ? animations.graze : animations[mode];
       const scale = Math.max(1, Math.min(24, Number(scaleInput.value) || 5));
       const fps = Math.max(1, Math.min(12, Number(fpsInput.value) || 4));
       const frameTime = 1000 / fps;
@@ -252,7 +306,11 @@
         last = ts;
       }
 
-      drawFrame(frames[frameIdx], scale);
+      if (mode === 'tree') {
+        drawTreeScene(frames[frameIdx], scale);
+      } else {
+        drawFrame(frames[frameIdx], scale);
+      }
       meta.textContent = `Animation: ${mode} | Frame: ${frameIdx + 1}/${frames.length} | Scale: ${scale}x | FPS: ${fps}`;
       requestAnimationFrame(tick);
     }
@@ -267,9 +325,13 @@
     });
 
     stepBtn.addEventListener('click', () => {
-      const frames = animations[animSel.value];
+      const frames = animSel.value === 'tree' ? animations.graze : animations[animSel.value];
       frameIdx = (frameIdx + 1) % frames.length;
-      drawFrame(frames[frameIdx], Number(scaleInput.value) || 5);
+      if (animSel.value === 'tree') {
+        drawTreeScene(frames[frameIdx], Number(scaleInput.value) || 5);
+      } else {
+        drawFrame(frames[frameIdx], Number(scaleInput.value) || 5);
+      }
     });
 
     drawFrame(base, 5);
