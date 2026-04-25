@@ -270,6 +270,14 @@
       tree: {1: '#6C4A2D', 2: '#5A9E46'}
     };
 
+    const mirrorX = (matrix) => matrix.map((row) => [...row].reverse());
+    const treeVariantsMirrored = {
+      full: mirrorX(treeFull),
+      grazed: mirrorX(tree75),
+      half: mirrorX(tree50),
+      quarter: mirrorX(tree25)
+    };
+
     let playing = true;
     let frame = 0;
     let last = 0;
@@ -297,10 +305,10 @@
     }
 
     function treeForStage(stage) {
-      if (stage === 1) return tree75;
-      if (stage === 2) return tree50;
-      if (stage === 3) return tree25;
-      return treeFull;
+      if (stage === 1) return treeVariantsMirrored.grazed;
+      if (stage === 2) return treeVariantsMirrored.half;
+      if (stage === 3) return treeVariantsMirrored.quarter;
+      return treeVariantsMirrored.full;
     }
 
     function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, flipHorizontal = false) {
@@ -355,7 +363,7 @@
         treeOffset += 0.2;
       }
 
-      const tilePeriod = treeFull[0].length;
+      const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
       const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
       const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
@@ -395,13 +403,13 @@
       const xTile = (event.clientX - rect.left) / scale;
       const yTile = (event.clientY - rect.top) / scale;
 
-      const tilePeriod = treeFull[0].length;
+      const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
       const k = Math.floor((xTile - baseTreeX) / tilePeriod);
       const localX = Math.floor(xTile - (baseTreeX + k * tilePeriod));
       const localY = Math.floor(yTile - 6);
 
-      if (localX < 0 || localX >= tilePeriod || localY < 0 || localY >= treeFull.length) return;
+      if (localX < 0 || localX >= tilePeriod || localY < 0 || localY >= treeVariantsMirrored.full.length) return;
 
       const baseStage = baseTreeStage();
       const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
