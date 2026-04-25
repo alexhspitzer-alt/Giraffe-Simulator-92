@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giraffe Grazing Tree Preview</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #12161f;
+      color: #e7edf7;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      padding: 20px;
+    }
+    .wrap {
+      width: min(980px, 100%);
+      background: #1a2030;
+      border: 1px solid #2b3750;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    a { color: #8fc4ff; }
+    .stage {
+      border: 1px solid #2b3750;
+      border-radius: 10px;
+      padding: 12px;
+      background: #0f1624;
+      display: grid;
+      place-items: center;
+      margin-bottom: 12px;
+    }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 1px solid #2e3c58;
+      border-radius: 8px;
+      background: linear-gradient(#0f1e3a, #14274b 45%, #3f6d39 45%, #3f6d39);
+    }
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    input, button {
+      background: #101827;
+      color: #e7edf7;
+      border: 1px solid #334563;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <h1>Giraffe Grazing on Acacia Tree</h1>
+      <a href="./index.html">← Back to sprite preview</a>
+    </div>
+
+    <section class="stage">
+      <canvas id="scene" width="700" height="500"></canvas>
+    </section>
+
+    <section class="controls">
+      <label for="scale">Scale</label>
+      <input id="scale" type="number" min="1" max="18" value="5" />
+      <label for="fps">FPS</label>
+      <input id="fps" type="number" min="1" max="12" value="4" />
+      <label for="treeState">Tree</label>
+      <select id="treeState">
+        <option value="full" selected>100%</option>
+        <option value="grazed">75%</option>
+        <option value="half">50%</option>
+        <option value="quarter">25%</option>
+      </select>
+      <button id="toggle">Pause</button>
+      <button id="walkRight">Walk Right</button>
+      <button id="walkLeft">Walk Left</button>
+    </section>
+  </main>
+
+  <script>
+    const giraffe = [
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,0,0,0],
+      [0,0,0,0,0,0,1,1,2,1,1,2,1,1,1,2,1,1,1,2,1,1,0,0,0],
+      [0,0,0,0,0,0,1,2,1,1,1,1,2,1,1,1,2,1,1,1,2,1,0,0,0],
+      [0,0,0,0,0,0,1,1,1,2,1,1,1,2,1,1,1,2,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,1,2,1,1,2,1,1,1,2,1,1,2,1,1,2,1,0,0,0],
+      [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0]
+    ];
+
+    const treeFull = [
+      [0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0],
+      [0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0],
+      [0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0],
+      [0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
+    const tree75 = [
+      [0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0],
+      [0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0],
+      [0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0],
+      [0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
+    const tree50 = [
+      [0,0,0,0,0,0,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,1,1,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
+    const tree25 = [
+      [0,0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,2,2,2,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,2,2,2,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,1,1,2,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
+    const scene = document.getElementById('scene');
+    const ctx = scene.getContext('2d');
+    const scaleInput = document.getElementById('scale');
+    const fpsInput = document.getElementById('fps');
+    const treeStateInput = document.getElementById('treeState');
+    const toggle = document.getElementById('toggle');
+    const walkRightBtn = document.getElementById('walkRight');
+    const walkLeftBtn = document.getElementById('walkLeft');
+
+    const clone = (m) => m.map((row) => [...row]);
+    const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
+
+    function makeWalkA() {
+      const m = clone(giraffe);
+      for (let r = 19; r <= 24; r++) {
+        m[r - 1][22] = m[r][22];
+        m[r - 1][23] = m[r][23];
+      }
+      setPx(m, 24, 22, 0);
+      setPx(m, 24, 23, 0);
+      setPx(m, 19, 22, 1);
+      setPx(m, 24, 7, 0);
+      return m;
+    }
+
+    function makeWalkB() {
+      const m = clone(giraffe);
+      for (let r = 19; r <= 24; r++) {
+        m[r - 1][6] = m[r][6];
+        m[r - 1][7] = m[r][7];
+      }
+      setPx(m, 24, 6, 0);
+      setPx(m, 24, 7, 0);
+      setPx(m, 19, 8, 1);
+      setPx(m, 24, 23, 0);
+      return m;
+    }
+
+    function makeGraze(headBob = 0) {
+      const m = clone(giraffe);
+      for (let r = 0; r < 12; r++) {
+        for (let c = 15; c < 23; c++) {
+          setPx(m, r, c, 0);
+        }
+      }
+      for (let r = 0; r < 12; r++) {
+        for (let c = 15; c < 23; c++) {
+          const v = giraffe[r][c];
+          if (!v) continue;
+          setPx(m, r + 2 + headBob, c + 1, v);
+        }
+      }
+      return m;
+    }
+
+    const grazeFrames = [makeGraze(0), makeGraze(1)];
+    const walkFrames = [makeWalkA(), makeWalkB()];
+
+    const palette = {
+      giraffe: {1: '#E2B24A', 2: '#8A4E1F'},
+      tree: {1: '#6C4A2D', 2: '#5A9E46'}
+    };
+
+    let playing = true;
+    let frame = 0;
+    let last = 0;
+    let treeOffset = 0;
+    let movementMode = 'graze'; // graze | right | left
+    const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25)
+
+    function drawMatrix(matrix, xOff, yOff, scale, colors) {
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+          const v = matrix[r][c];
+          if (!v) continue;
+          ctx.fillStyle = colors[v];
+          ctx.fillRect((xOff + c) * scale, (yOff + r) * scale, scale, scale);
+        }
+      }
+    }
+
+    function baseTreeStage() {
+      const state = treeStateInput.value;
+      if (state === 'grazed') return 1;
+      if (state === 'half') return 2;
+      if (state === 'quarter') return 3;
+      return 0;
+    }
+
+    function treeForStage(stage) {
+      if (stage === 1) return tree75;
+      if (stage === 2) return tree50;
+      if (stage === 3) return tree25;
+      return treeFull;
+    }
+
+    function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, flipHorizontal = false) {
+      const width = matrix[0].length * scale;
+      const height = matrix.length * scale;
+      const px = xOff * scale;
+      const py = yOff * scale;
+
+      if (!flipHorizontal) {
+        drawMatrix(matrix, xOff, yOff, scale, colors);
+        return;
+      }
+
+      ctx.save();
+      // Keep the sprite upright while facing left.
+      ctx.translate(px + width, py);
+      ctx.scale(-1, 1);
+
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+          const v = matrix[r][c];
+          if (!v) continue;
+          ctx.fillStyle = colors[v];
+          ctx.fillRect(c * scale, r * scale, scale, scale);
+        }
+      }
+      ctx.restore();
+    }
+
+    function render(ts) {
+      const scale = Math.max(1, Math.min(18, Number(scaleInput.value) || 5));
+      const fps = Math.max(1, Math.min(12, Number(fpsInput.value) || 4));
+      const frameTime = 1000 / fps;
+      const moving = movementMode === 'right' || movementMode === 'left';
+      const activeFrames = moving ? walkFrames : grazeFrames;
+      const baseStage = baseTreeStage();
+
+      if (playing && ts - last >= frameTime) {
+        frame = (frame + 1) % activeFrames.length;
+        last = ts;
+      }
+
+      const cols = 70;
+      const rows = 40;
+      scene.width = cols * scale;
+      scene.height = rows * scale;
+      ctx.clearRect(0, 0, scene.width, scene.height);
+
+      if (playing && movementMode === 'right') {
+        treeOffset -= 0.2;
+      } else if (playing && movementMode === 'left') {
+        treeOffset += 0.2;
+      }
+
+      const tilePeriod = treeFull[0].length;
+      const baseTreeX = 42 + treeOffset;
+      const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
+      const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
+      for (let k = kStart; k <= kEnd; k++) {
+        const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
+        const tree = treeForStage(stage);
+        drawMatrix(tree, baseTreeX + k * tilePeriod, 6, scale, palette.tree);
+      }
+
+      drawMatrixTransformed(activeFrames[frame], 10, 12, scale, palette.giraffe, movementMode === 'left');
+
+      requestAnimationFrame(render);
+    }
+
+    toggle.addEventListener('click', () => {
+      playing = !playing;
+      toggle.textContent = playing ? 'Pause' : 'Play';
+    });
+
+    walkRightBtn.addEventListener('click', () => {
+      movementMode = movementMode === 'right' ? 'graze' : 'right';
+      walkRightBtn.textContent = movementMode === 'right' ? 'Stop Right' : 'Walk Right';
+      walkLeftBtn.textContent = 'Walk Left';
+      frame = 0;
+    });
+
+    walkLeftBtn.addEventListener('click', () => {
+      movementMode = movementMode === 'left' ? 'graze' : 'left';
+      walkLeftBtn.textContent = movementMode === 'left' ? 'Stop Left' : 'Walk Left';
+      walkRightBtn.textContent = 'Walk Right';
+      frame = 0;
+    });
+
+    scene.addEventListener('click', (event) => {
+      const scale = Math.max(1, Math.min(18, Number(scaleInput.value) || 5));
+      const rect = scene.getBoundingClientRect();
+      const xTile = (event.clientX - rect.left) / scale;
+      const yTile = (event.clientY - rect.top) / scale;
+
+      const tilePeriod = treeFull[0].length;
+      const baseTreeX = 42 + treeOffset;
+      const k = Math.floor((xTile - baseTreeX) / tilePeriod);
+      const localX = Math.floor(xTile - (baseTreeX + k * tilePeriod));
+      const localY = Math.floor(yTile - 6);
+
+      if (localX < 0 || localX >= tilePeriod || localY < 0 || localY >= treeFull.length) return;
+
+      const baseStage = baseTreeStage();
+      const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
+      const currentTree = treeForStage(currentStage);
+
+      // Only green foliage tiles (value 2) are clickable.
+      if (currentTree[localY][localX] !== 2) return;
+
+      const nextStage = Math.min(3, currentStage + 1);
+      treeStageById.set(k, nextStage);
+    });
+
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
