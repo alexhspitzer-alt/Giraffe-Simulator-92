@@ -118,6 +118,12 @@
         <option value="grazed">75%</option>
         <option value="half">50%</option>
         <option value="quarter">25%</option>
+        <option value="depleted">0%</option>
+      </select>
+      <label for="treeType">Tree Type</label>
+      <select id="treeType">
+        <option value="level1" selected>Level 1</option>
+        <option value="level2">Level 2</option>
       </select>
 
       <button id="toggle">Pause</button>
@@ -305,6 +311,29 @@
       [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
     ];
 
+    const tree0 = [
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
     const palette = {
       1: '#E2B24A',
       2: '#8A4E1F'
@@ -316,11 +345,36 @@
     };
 
     const mirrorX = (matrix) => matrix.map((row) => [...row].reverse());
+    function buildLevel2Tree(baseTree) {
+      const targetRows = baseTree.length + 10;
+      const targetCols = baseTree[0].length + 6;
+      const out = Array.from({ length: targetRows }, () => Array(targetCols).fill(0));
+
+      for (let r = 0; r < baseTree.length; r++) {
+        for (let c = 0; c < baseTree[0].length; c++) {
+          const v = baseTree[r][c];
+          if (!v) continue;
+          const nr = Math.min(targetRows - 1, Math.round(r * 1.2));
+          const nc = Math.min(targetCols - 1, Math.round(c * 1.2) + 2);
+          out[nr][nc] = v;
+          if (v === 2 && r < 6 && nc + 1 < targetCols) out[nr][nc + 1] = 2;
+        }
+      }
+
+      for (let r = targetRows - 10; r < targetRows; r++) {
+        out[r][14] = 1;
+        out[r][15] = 1;
+      }
+      return out;
+    }
+
+    const treeLevel2 = mirrorX(buildLevel2Tree(treeFull));
     const treeVariantsMirrored = {
       full: mirrorX(treeFull),
       grazed: mirrorX(tree75),
       half: mirrorX(tree50),
-      quarter: mirrorX(tree25)
+      quarter: mirrorX(tree25),
+      depleted: mirrorX(tree0)
     };
 
     const canvas = document.getElementById('sprite');
@@ -329,6 +383,7 @@
     const scaleInput = document.getElementById('scale');
     const fpsInput = document.getElementById('fps');
     const treeStateInput = document.getElementById('treeState');
+    const treeTypeInput = document.getElementById('treeType');
     const toggleBtn = document.getElementById('toggle');
     const stepBtn = document.getElementById('step');
     const meta = document.getElementById('meta');
@@ -356,7 +411,7 @@
 
     function drawTreeScene(giraffeFrame, scale, treeMatrix) {
       const sceneCols = 70;
-      const sceneRows = 40;
+      const sceneRows = Math.max(40, treeMatrix.length + 12);
       canvas.width = sceneCols * scale;
       canvas.height = sceneRows * scale;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -382,7 +437,10 @@
     function tick(ts) {
       const mode = animSel.value;
       const frames = mode === 'tree' ? animations.graze : animations[mode];
-      const treeMatrix = treeVariantsMirrored[treeStateInput.value] || treeVariantsMirrored.full;
+      const treeMatrix =
+        treeTypeInput.value === 'level2'
+          ? treeLevel2
+          : (treeVariantsMirrored[treeStateInput.value] || treeVariantsMirrored.full);
       const scale = Math.max(1, Math.min(24, Number(scaleInput.value) || 5));
       const fps = Math.max(1, Math.min(12, Number(fpsInput.value) || 4));
       const frameTime = 1000 / fps;
@@ -412,7 +470,10 @@
 
     stepBtn.addEventListener('click', () => {
       const frames = animSel.value === 'tree' ? animations.graze : animations[animSel.value];
-      const treeMatrix = treeVariantsMirrored[treeStateInput.value] || treeVariantsMirrored.full;
+      const treeMatrix =
+        treeTypeInput.value === 'level2'
+          ? treeLevel2
+          : (treeVariantsMirrored[treeStateInput.value] || treeVariantsMirrored.full);
       frameIdx = (frameIdx + 1) % frames.length;
       if (animSel.value === 'tree') {
         drawTreeScene(frames[frameIdx], Number(scaleInput.value) || 5, treeMatrix);

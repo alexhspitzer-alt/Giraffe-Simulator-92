@@ -79,6 +79,7 @@
         <option value="grazed">75%</option>
         <option value="half">50%</option>
         <option value="quarter">25%</option>
+        <option value="depleted">0%</option>
       </select>
       <button id="toggle">Pause</button>
       <button id="walkRight">Walk Right</button>
@@ -207,6 +208,29 @@
       [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
     ];
 
+    const tree0 = [
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
     const scene = document.getElementById('scene');
     const ctx = scene.getContext('2d');
     const scaleInput = document.getElementById('scale');
@@ -275,7 +299,8 @@
       full: mirrorX(treeFull),
       grazed: mirrorX(tree75),
       half: mirrorX(tree50),
-      quarter: mirrorX(tree25)
+      quarter: mirrorX(tree25),
+      depleted: mirrorX(tree0)
     };
 
     let playing = true;
@@ -283,7 +308,7 @@
     let last = 0;
     let treeOffset = 0;
     let movementMode = 'graze'; // graze | right | left
-    const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25)
+    const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
 
     function drawMatrix(matrix, xOff, yOff, scale, colors) {
       for (let r = 0; r < matrix.length; r++) {
@@ -301,6 +326,7 @@
       if (state === 'grazed') return 1;
       if (state === 'half') return 2;
       if (state === 'quarter') return 3;
+      if (state === 'depleted') return 4;
       return 0;
     }
 
@@ -308,6 +334,7 @@
       if (stage === 1) return treeVariantsMirrored.grazed;
       if (stage === 2) return treeVariantsMirrored.half;
       if (stage === 3) return treeVariantsMirrored.quarter;
+      if (stage >= 4) return treeVariantsMirrored.depleted;
       return treeVariantsMirrored.full;
     }
 
@@ -420,7 +447,7 @@
       // Only green foliage tiles (value 2) are clickable.
       if (currentTree[localY][localX] !== 2) return;
 
-      const nextStage = Math.min(3, currentStage + 1);
+      const nextStage = Math.min(4, currentStage + 1);
       treeStageById.set(k, nextStage);
     });
 
