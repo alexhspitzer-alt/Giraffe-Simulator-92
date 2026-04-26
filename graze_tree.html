@@ -353,6 +353,7 @@
 
       const cols = 70;
       const rows = 40;
+      const treeY = 14;
       scene.width = cols * scale;
       scene.height = rows * scale;
       ctx.clearRect(0, 0, scene.width, scene.height);
@@ -370,7 +371,7 @@
       for (let k = kStart; k <= kEnd; k++) {
         const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
         const tree = treeForStage(stage);
-        drawMatrix(tree, baseTreeX + k * tilePeriod, 6, scale, palette.tree);
+        drawMatrix(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree);
       }
 
       drawMatrixTransformed(activeFrames[frame], 10, 12, scale, palette.giraffe, movementMode === 'left');
@@ -405,9 +406,10 @@
 
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
+      const treeY = 14;
       const k = Math.floor((xTile - baseTreeX) / tilePeriod);
       const localX = Math.floor(xTile - (baseTreeX + k * tilePeriod));
-      const localY = Math.floor(yTile - 6);
+      const localY = Math.floor(yTile - treeY);
 
       if (localX < 0 || localX >= tilePeriod || localY < 0 || localY >= treeVariantsMirrored.full.length) return;
 
