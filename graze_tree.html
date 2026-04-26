@@ -299,6 +299,7 @@
       const rows = 30;
       const cols = 31;
       const out = Array.from({ length: rows }, () => Array(cols).fill(0));
+      const hasFoliage = baseTree.some((row) => row.includes(2));
 
       // Scale up canopy/branches from the base stage matrix.
       for (let r = 0; r < baseTree.length; r++) {
@@ -309,6 +310,25 @@
           const nc = Math.min(cols - 1, Math.round(c * 1.2) + 2);
           out[nr][nc] = v;
           if (v === 2 && r < 6 && nc + 1 < cols) out[nr][nc + 1] = 2;
+        }
+      }
+
+      // Keep canopy coherent by closing gaps between foliage spans.
+      if (hasFoliage) {
+        for (let r = 0; r <= 12; r++) {
+          let first = -1;
+          let last = -1;
+          for (let c = 0; c < cols; c++) {
+            if (out[r][c] === 2) {
+              if (first === -1) first = c;
+              last = c;
+            }
+          }
+          if (first !== -1 && last !== -1 && last - first >= 2) {
+            for (let c = first; c <= last; c++) {
+              if (out[r][c] === 0) out[r][c] = 2;
+            }
+          }
         }
       }
 
