@@ -295,44 +295,20 @@
     };
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
 
-    function buildLevel2Tree(baseTree) {
+    const cloneMatrix = (matrix) => matrix.map((row) => [...row]);
+
+    function buildLevel2TreeBase() {
       const rows = 30;
       const cols = 31;
       const out = Array.from({ length: rows }, () => Array(cols).fill(0));
-      const hasFoliage = baseTree.some((row) => row.includes(2));
 
-      // Scale up canopy/branches from the base stage matrix.
-      for (let r = 0; r < baseTree.length; r++) {
-        for (let c = 0; c < baseTree[0].length; c++) {
-          const v = baseTree[r][c];
-          if (!v) continue;
-          const nr = Math.min(rows - 1, Math.round(r * 1.2));
-          const nc = Math.min(cols - 1, Math.round(c * 1.2) + 2);
-          out[nr][nc] = v;
-          if (v === 2 && r < 6 && nc + 1 < cols) out[nr][nc + 1] = 2;
-        }
-      }
+      // Coherent level-2 canopy shape.
+      for (let r = 0; r <= 2; r++) for (let c = 7; c <= 23; c++) out[r][c] = 2;
+      for (let r = 3; r <= 7; r++) for (let c = 4; c <= 26; c++) out[r][c] = 2;
+      for (let r = 8; r <= 11; r++) for (let c = 3; c <= 27; c++) out[r][c] = 2;
+      for (let c = 6; c <= 24; c++) out[12][c] = 2;
 
-      // Keep canopy coherent by closing gaps between foliage spans.
-      if (hasFoliage) {
-        for (let r = 0; r <= 12; r++) {
-          let first = -1;
-          let last = -1;
-          for (let c = 0; c < cols; c++) {
-            if (out[r][c] === 2) {
-              if (first === -1) first = c;
-              last = c;
-            }
-          }
-          if (first !== -1 && last !== -1 && last - first >= 2) {
-            for (let c = first; c <= last; c++) {
-              if (out[r][c] === 0) out[r][c] = 2;
-            }
-          }
-        }
-      }
-
-      // Ensure coherent trunk/branch silhouette for all stages.
+      // Trunk and three branches.
       for (let r = 13; r < rows; r++) {
         out[r][14] = 1;
         out[r][15] = 1;
@@ -344,6 +320,24 @@
       return out;
     }
 
+    function buildLevel2Stage(level2Base, remainingRatio) {
+      const out = cloneMatrix(level2Base);
+      const foliage = [];
+      for (let r = 0; r < out.length; r++) {
+        for (let c = 0; c < out[0].length; c++) {
+          if (out[r][c] === 2) foliage.push([r, c]);
+        }
+      }
+
+      foliage.sort((a, b) => (b[1] - a[1]) || (a[0] - b[0])); // eat from right side first
+      const keepCount = Math.floor(foliage.length * remainingRatio);
+      for (let i = keepCount; i < foliage.length; i++) {
+        const [r, c] = foliage[i];
+        out[r][c] = 0;
+      }
+      return out;
+    }
+
     const mirrorX = (matrix) => matrix.map((row) => [...row].reverse());
     const treeVariantsMirrored = {
       full: mirrorX(treeFull),
@@ -352,12 +346,13 @@
       quarter: mirrorX(tree25),
       depleted: mirrorX(tree0)
     };
+    const level2Base = buildLevel2TreeBase();
     const treeLevel2VariantsMirrored = {
-      full: mirrorX(buildLevel2Tree(treeFull)),
-      grazed: mirrorX(buildLevel2Tree(tree75)),
-      half: mirrorX(buildLevel2Tree(tree50)),
-      quarter: mirrorX(buildLevel2Tree(tree25)),
-      depleted: mirrorX(buildLevel2Tree(tree0))
+      full: mirrorX(buildLevel2Stage(level2Base, 1.00)),
+      grazed: mirrorX(buildLevel2Stage(level2Base, 0.75)),
+      half: mirrorX(buildLevel2Stage(level2Base, 0.50)),
+      quarter: mirrorX(buildLevel2Stage(level2Base, 0.25)),
+      depleted: mirrorX(buildLevel2Stage(level2Base, 0.00))
     };
 
     let playing = true;
