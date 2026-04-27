@@ -340,21 +340,22 @@
         const uneven = (((r * 3) % 5) - 2) * 0.03; // slight per-row variation
         const eatFrac = Math.max(0, Math.min(1, eatBase + uneven));
         const cut = Math.floor(span * eatFrac);
-        const cutRight = Math.min(right, left + cut);
+        const cutLeft = Math.max(left, right - cut);
 
-        // Primary grazing direction: left -> right.
-        for (let c = left; c <= cutRight; c++) {
+        // Primary grazing direction: right -> left in base matrix
+        // (final rendered orientation is mirrored).
+        for (let c = cutLeft; c <= right; c++) {
           if (out[r][c] === 2) out[r][c] = 0;
         }
 
         // Irregular bite marks for less uniform silhouettes.
         if (stageIndex >= 2) {
-          for (let c = cutRight + 1; c <= Math.min(right, cutRight + 6); c++) {
+          for (let c = Math.max(left, cutLeft - 6); c < cutLeft; c++) {
             if ((r + c) % 3 === 0 && out[r][c] === 2) out[r][c] = 0;
           }
         }
         if (stageIndex >= 3) {
-          for (let c = cutRight + 2; c <= Math.min(right, cutRight + 10); c++) {
+          for (let c = Math.max(left, cutLeft - 10); c < cutLeft - 1; c++) {
             if ((r * 2 + c) % 4 === 0 && out[r][c] === 2) out[r][c] = 0;
           }
         }
@@ -548,8 +549,29 @@
 
       if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) return;
 
-      // Only green foliage tiles (value 2) are clickable.
-      if (currentTree[localY][localX] !== 2) return;
+      // Green foliage tiles are primary click targets.
+      // For sparse stages, allow clicks anywhere inside the remaining canopy bounds.
+      let minX = Infinity;
+      let maxX = -1;
+      let minY = Infinity;
+      let maxY = -1;
+      for (let r = 0; r < currentTree.length; r++) {
+        for (let c = 0; c < currentTree[0].length; c++) {
+          if (currentTree[r][c] === 2) {
+            minX = Math.min(minX, c);
+            maxX = Math.max(maxX, c);
+            minY = Math.min(minY, r);
+            maxY = Math.max(maxY, r);
+          }
+        }
+      }
+
+      if (maxX === -1) return; // already depleted
+      const hitLeaf = currentTree[localY][localX] === 2;
+      const hitCanopyBounds =
+        localX >= minX && localX <= maxX &&
+        localY >= minY && localY <= maxY;
+      if (!hitLeaf && !hitCanopyBounds) return;
 
       const nextStage = Math.min(4, currentStage + 1);
       treeStageById.set(k, nextStage);
