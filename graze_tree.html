@@ -320,21 +320,56 @@
       return out;
     }
 
-    function buildLevel2Stage(level2Base, remainingRatio) {
+    function buildLevel2Stage(level2Base, stageIndex) {
       const out = cloneMatrix(level2Base);
-      const foliage = [];
-      for (let r = 0; r < out.length; r++) {
+      const eatProfile = [0.0, 0.22, 0.46, 0.68, 1.0];
+      const eatBase = eatProfile[Math.max(0, Math.min(4, stageIndex))];
+
+      for (let r = 0; r <= 12; r++) {
+        let left = -1;
+        let right = -1;
         for (let c = 0; c < out[0].length; c++) {
-          if (out[r][c] === 2) foliage.push([r, c]);
+          if (out[r][c] === 2) {
+            if (left === -1) left = c;
+            right = c;
+          }
+        }
+        if (left === -1) continue;
+
+        const span = right - left + 1;
+        const uneven = (((r * 3) % 5) - 2) * 0.03; // slight per-row variation
+        const eatFrac = Math.max(0, Math.min(1, eatBase + uneven));
+        const cut = Math.floor(span * eatFrac);
+        const cutRight = Math.min(right, left + cut);
+
+        // Primary grazing direction: left -> right.
+        for (let c = left; c <= cutRight; c++) {
+          if (out[r][c] === 2) out[r][c] = 0;
+        }
+
+        // Irregular bite marks for less uniform silhouettes.
+        if (stageIndex >= 2) {
+          for (let c = cutRight + 1; c <= Math.min(right, cutRight + 6); c++) {
+            if ((r + c) % 3 === 0 && out[r][c] === 2) out[r][c] = 0;
+          }
+        }
+        if (stageIndex >= 3) {
+          for (let c = cutRight + 2; c <= Math.min(right, cutRight + 10); c++) {
+            if ((r * 2 + c) % 4 === 0 && out[r][c] === 2) out[r][c] = 0;
+          }
+        }
+        if (stageIndex >= 4) {
+          for (let c = left; c <= right; c++) {
+            if (out[r][c] === 2) out[r][c] = 0;
+          }
         }
       }
 
-      foliage.sort((a, b) => (b[1] - a[1]) || (a[0] - b[0])); // eat from right side first
-      const keepCount = Math.floor(foliage.length * remainingRatio);
-      for (let i = keepCount; i < foliage.length; i++) {
-        const [r, c] = foliage[i];
-        out[r][c] = 0;
-      }
+      // Reveal additional branch pixels as foliage gets eaten.
+      if (stageIndex >= 1) { out[12][11] = 1; out[11][10] = 1; }
+      if (stageIndex >= 2) { out[13][12] = 1; out[10][9] = 1; }
+      if (stageIndex >= 3) { out[14][11] = 1; out[9][8] = 1; }
+
       return out;
     }
 
@@ -348,11 +383,11 @@
     };
     const level2Base = buildLevel2TreeBase();
     const treeLevel2VariantsMirrored = {
-      full: mirrorX(buildLevel2Stage(level2Base, 1.00)),
-      grazed: mirrorX(buildLevel2Stage(level2Base, 0.75)),
-      half: mirrorX(buildLevel2Stage(level2Base, 0.50)),
-      quarter: mirrorX(buildLevel2Stage(level2Base, 0.25)),
-      depleted: mirrorX(buildLevel2Stage(level2Base, 0.00))
+      full: mirrorX(buildLevel2Stage(level2Base, 0)),
+      grazed: mirrorX(buildLevel2Stage(level2Base, 1)),
+      half: mirrorX(buildLevel2Stage(level2Base, 2)),
+      quarter: mirrorX(buildLevel2Stage(level2Base, 3)),
+      depleted: mirrorX(buildLevel2Stage(level2Base, 4))
     };
 
     let playing = true;
