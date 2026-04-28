@@ -295,6 +295,7 @@
     };
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
     const treePaletteLevel3 = {1: '#6C4A2D', 2: '#2E8A35', 3: '#45A84A', 4: '#69BF63'};
+    const cloudPalette = {1: 'rgba(232, 242, 255, 0.3)', 2: 'rgba(255, 255, 255, 0.22)'};
 
     const cloneMatrix = (matrix) => matrix.map((row) => [...row]);
 
@@ -516,6 +517,33 @@
       }
     }
 
+    const cloudSprite = [
+      [0,0,0,0,1,1,1,0,0,0,0,0,0,0],
+      [0,0,0,1,1,1,1,1,0,0,1,1,0,0],
+      [0,0,1,1,1,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,2,2,1,1,1,1,1,1,1],
+      [0,0,1,1,1,1,1,1,1,1,1,1,1,0],
+      [0,0,0,0,1,1,1,1,1,1,0,0,0,0]
+    ];
+
+    function drawClouds(cols, scale) {
+      const cloudTilePeriod = 90;
+      const cloudOffset = treeOffset * 0.1; // subtle parallax: 1/10th tree speed
+      const baseCloudX = 8 + cloudOffset;
+      const kStart = Math.floor((-(cloudTilePeriod) - baseCloudX) / cloudTilePeriod);
+      const kEnd = Math.ceil((cols + cloudTilePeriod - baseCloudX) / cloudTilePeriod);
+      const cloudRows = [2, 5, 8];
+
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      for (let k = kStart; k <= kEnd; k++) {
+        if ((k % 2) !== 0) continue; // occasional clouds
+        const y = cloudRows[((k % cloudRows.length) + cloudRows.length) % cloudRows.length];
+        drawMatrix(cloudSprite, baseCloudX + k * cloudTilePeriod, y, scale, cloudPalette);
+      }
+      ctx.restore();
+    }
+
     function baseTreeStage() {
       const state = treeStateInput.value;
       if (state === 'grazed') return 1;
@@ -604,6 +632,7 @@
 
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
+      drawClouds(cols, scale);
       const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
       const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
       for (let k = kStart; k <= kEnd; k++) {
