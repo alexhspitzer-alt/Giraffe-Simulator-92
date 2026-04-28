@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giraffe Grazing Tree Preview</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #12161f;
+      color: #e7edf7;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      padding: 20px;
+    }
+    .wrap {
+      width: min(980px, 100%);
+      background: #1a2030;
+      border: 1px solid #2b3750;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    a { color: #8fc4ff; }
+    .stage {
+      border: 1px solid #2b3750;
+      border-radius: 10px;
+      padding: 12px;
+      background: #0f1624;
+      display: grid;
+      place-items: center;
+      margin-bottom: 12px;
+    }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 1px solid #2e3c58;
+      border-radius: 8px;
+      background: linear-gradient(#0f1e3a, #14274b 45%, #3f6d39 45%, #3f6d39);
+    }
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    input, button {
+      background: #101827;
+      color: #e7edf7;
+      border: 1px solid #334563;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <h1>Giraffe Grazing on Acacia Tree</h1>
+      <a href="./index.html">← Back to sprite preview</a>
+    </div>
+
+    <section class="stage">
+      <canvas id="scene" width="700" height="500"></canvas>
+    </section>
+
+    <section class="controls">
+      <label for="scale">Scale</label>
+      <input id="scale" type="number" min="1" max="18" value="5" />
+      <label for="fps">FPS</label>
+      <input id="fps" type="number" min="1" max="12" value="4" />
+      <label for="treeState">Tree</label>
+      <select id="treeState">
+        <option value="full" selected>100%</option>
+        <option value="grazed">75%</option>
+        <option value="half">50%</option>
+        <option value="quarter">25%</option>
+        <option value="depleted">0%</option>
+      </select>
+      <button id="toggle">Pause</button>
+      <button id="walkRight">Walk Right</button>
+      <button id="walkLeft">Walk Left</button>
+    </section>
+  </main>
+
+  <script>
+    const giraffe = [
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
+      [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,0,0,0],
+      [0,0,0,0,0,0,1,1,2,1,1,2,1,1,1,2,1,1,1,2,1,1,0,0,0],
+      [0,0,0,0,0,0,1,2,1,1,1,1,2,1,1,1,2,1,1,1,2,1,0,0,0],
+      [0,0,0,0,0,0,1,1,1,2,1,1,1,2,1,1,1,2,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,1,2,1,1,2,1,1,1,2,1,1,2,1,1,2,1,0,0,0],
+      [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0]
+    ];
+
+    const treeFull = [
+      [0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0],
+      [0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0],
+      [0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0],
+      [0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
+    const tree75 = [
+      [0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0],
+      [0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0],
+      [0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0],
+      [0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
+    const tree50 = [
+      [0,0,0,0,0,0,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,1,1,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
+    const tree25 = [
+      [0,0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,2,2,2,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,2,2,2,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,1,1,2,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
+    const tree0 = [
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
+    const scene = document.getElementById('scene');
+    const ctx = scene.getContext('2d');
+    const scaleInput = document.getElementById('scale');
+    const fpsInput = document.getElementById('fps');
+    const treeStateInput = document.getElementById('treeState');
+    const toggle = document.getElementById('toggle');
+    const walkRightBtn = document.getElementById('walkRight');
+    const walkLeftBtn = document.getElementById('walkLeft');
+
+    const clone = (m) => m.map((row) => [...row]);
+    const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
+
+    function makeWalkA() {
+      const m = clone(giraffe);
+      for (let r = 19; r <= 24; r++) {
+        m[r - 1][22] = m[r][22];
+        m[r - 1][23] = m[r][23];
+      }
+      setPx(m, 24, 22, 0);
+      setPx(m, 24, 23, 0);
+      setPx(m, 19, 22, 1);
+      setPx(m, 24, 7, 0);
+      return m;
+    }
+
+    function makeWalkB() {
+      const m = clone(giraffe);
+      for (let r = 19; r <= 24; r++) {
+        m[r - 1][6] = m[r][6];
+        m[r - 1][7] = m[r][7];
+      }
+      setPx(m, 24, 6, 0);
+      setPx(m, 24, 7, 0);
+      setPx(m, 19, 8, 1);
+      setPx(m, 24, 23, 0);
+      return m;
+    }
+
+    function makeGraze(headBob = 0) {
+      const m = clone(giraffe);
+      for (let r = 0; r < 12; r++) {
+        for (let c = 15; c < 23; c++) {
+          setPx(m, r, c, 0);
+        }
+      }
+      for (let r = 0; r < 12; r++) {
+        for (let c = 15; c < 23; c++) {
+          const v = giraffe[r][c];
+          if (!v) continue;
+          setPx(m, r + 2 + headBob, c + 1, v);
+        }
+      }
+      return m;
+    }
+
+    const grazeFrames = [makeGraze(0), makeGraze(1)];
+    const walkFrames = [makeWalkA(), makeWalkB()];
+
+    const palette = {
+      giraffe: {1: '#E2B24A', 2: '#8A4E1F'},
+      tree: {1: '#6C4A2D', 2: '#5A9E46'}
+    };
+    const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
+    const treePaletteLevel3 = {1: '#6C4A2D', 2: '#2E8A35', 3: '#45A84A', 4: '#69BF63'};
+
+    const cloneMatrix = (matrix) => matrix.map((row) => [...row]);
+
+    function buildLevel2TreeBase() {
+      const rows = 30;
+      const cols = 31;
+      const out = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+      // Coherent level-2 canopy shape.
+      for (let r = 0; r <= 2; r++) for (let c = 7; c <= 23; c++) out[r][c] = 2;
+      for (let r = 3; r <= 7; r++) for (let c = 4; c <= 26; c++) out[r][c] = 2;
+      for (let r = 8; r <= 11; r++) for (let c = 3; c <= 27; c++) out[r][c] = 2;
+      for (let c = 6; c <= 24; c++) out[12][c] = 2;
+
+      // Trunk and three branches.
+      for (let r = 13; r < rows; r++) {
+        out[r][14] = 1;
+        out[r][15] = 1;
+        out[r][16] = 1;
+      }
+      out[13][13] = 1; out[14][12] = 1; out[15][11] = 1;
+      out[13][17] = 1; out[14][18] = 1; out[15][19] = 1;
+      out[12][15] = 1; out[11][15] = 1; out[10][15] = 1;
+      return out;
+    }
+
+    function buildLevel2Stage(level2Base, stageIndex) {
+      const out = cloneMatrix(level2Base);
+      const eatProfile = [0.0, 0.22, 0.46, 0.68, 1.0];
+      const eatBase = eatProfile[Math.max(0, Math.min(4, stageIndex))];
+
+      for (let r = 0; r <= 12; r++) {
+        let left = -1;
+        let right = -1;
+        for (let c = 0; c < out[0].length; c++) {
+          if (out[r][c] === 2) {
+            if (left === -1) left = c;
+            right = c;
+          }
+        }
+        if (left === -1) continue;
+
+        const span = right - left + 1;
+        const uneven = (((r * 3) % 5) - 2) * 0.03; // slight per-row variation
+        const eatFrac = Math.max(0, Math.min(1, eatBase + uneven));
+        const cut = Math.floor(span * eatFrac);
+        const cutLeft = Math.max(left, right - cut);
+
+        // Primary grazing direction: right -> left in base matrix
+        // (final rendered orientation is mirrored).
+        for (let c = cutLeft; c <= right; c++) {
+          if (out[r][c] === 2) out[r][c] = 0;
+        }
+
+        // Irregular bite marks for less uniform silhouettes.
+        if (stageIndex >= 2) {
+          for (let c = Math.max(left, cutLeft - 6); c < cutLeft; c++) {
+            if ((r + c) % 3 === 0 && out[r][c] === 2) out[r][c] = 0;
+          }
+        }
+        if (stageIndex >= 3) {
+          for (let c = Math.max(left, cutLeft - 10); c < cutLeft - 1; c++) {
+            if ((r * 2 + c) % 4 === 0 && out[r][c] === 2) out[r][c] = 0;
+          }
+        }
+        if (stageIndex >= 4) {
+          for (let c = left; c <= right; c++) {
+            if (out[r][c] === 2) out[r][c] = 0;
+          }
+        }
+      }
+
+      // Reveal additional branch pixels as foliage gets eaten.
+      if (stageIndex >= 1) { out[12][11] = 1; out[11][10] = 1; }
+      if (stageIndex >= 2) { out[13][12] = 1; out[10][9] = 1; }
+      if (stageIndex >= 3) { out[14][11] = 1; out[9][8] = 1; }
+
+      return out;
+    }
+
+    function buildLevel3TreeBase() {
+      const rows = 36;
+      const cols = 33;
+      const out = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+      // A taller, level-1-like acacia canopy with graduated green bands.
+      for (let c = 7; c <= 25; c++) out[0][c] = 4;
+      for (let r = 1; r <= 3; r++) for (let c = 5; c <= 27; c++) out[r][c] = 4;
+      for (let r = 4; r <= 8; r++) for (let c = 3; c <= 29; c++) out[r][c] = 3;
+      for (let r = 9; r <= 12; r++) for (let c = 4; c <= 28; c++) out[r][c] = 2;
+      for (let c = 8; c <= 24; c++) out[13][c] = 2;
+
+      // Taller trunk.
+      for (let r = 14; r < rows; r++) {
+        out[r][15] = 1;
+        out[r][16] = 1;
+        out[r][17] = 1;
+      }
+
+      // More exposed branches than level 2.
+      out[13][14] = 1; out[12][13] = 1; out[11][12] = 1; out[10][11] = 1;
+      out[13][18] = 1; out[12][19] = 1; out[11][20] = 1; out[10][21] = 1;
+      out[15][14] = 1; out[16][13] = 1; out[17][12] = 1;
+      out[15][18] = 1; out[16][19] = 1; out[17][20] = 1;
+      out[14][16] = 1; out[13][16] = 1; out[12][16] = 1; out[11][16] = 1;
+
+      return out;
+    }
+
+    function isLeafValue(v) {
+      return v >= 2;
+    }
+
+    function degradeLeaf(v) {
+      if (v === 4) return 3;
+      if (v === 3) return 2;
+      return 0;
+    }
+
+    function buildLevel3Stage(level3Base, stageIndex) {
+      const out = cloneMatrix(level3Base);
+      const eatProfile = [0.0, 0.2, 0.42, 0.66, 1.0];
+      const eatBase = eatProfile[Math.max(0, Math.min(4, stageIndex))];
+
+      for (let r = 0; r <= 13; r++) {
+        let left = -1;
+        let right = -1;
+        for (let c = 0; c < out[0].length; c++) {
+          if (isLeafValue(out[r][c])) {
+            if (left === -1) left = c;
+            right = c;
+          }
+        }
+        if (left === -1) continue;
+
+        const span = right - left + 1;
+        const uneven = (((r * 5) % 7) - 3) * 0.02;
+        const eatFrac = Math.max(0, Math.min(1, eatBase + uneven));
+        const cut = Math.floor(span * eatFrac);
+        const cutLeft = Math.max(left, right - cut);
+
+        for (let c = cutLeft; c <= right; c++) {
+          if (!isLeafValue(out[r][c])) continue;
+          out[r][c] = degradeLeaf(out[r][c]);
+          if (stageIndex >= 2) out[r][c] = degradeLeaf(out[r][c]);
+          if (stageIndex >= 4) out[r][c] = 0;
+        }
+
+        if (stageIndex >= 2) {
+          for (let c = Math.max(left, cutLeft - 8); c < cutLeft; c++) {
+            if ((r + c) % 4 === 0 && isLeafValue(out[r][c])) out[r][c] = degradeLeaf(out[r][c]);
+          }
+        }
+        if (stageIndex >= 3) {
+          for (let c = left; c <= Math.max(left, cutLeft - 3); c++) {
+            if ((r * 3 + c) % 5 === 0 && isLeafValue(out[r][c])) out[r][c] = 0;
+          }
+        }
+        if (stageIndex >= 4) {
+          for (let c = left; c <= right; c++) {
+            if (isLeafValue(out[r][c])) out[r][c] = 0;
+          }
+        }
+      }
+
+      if (stageIndex >= 1) { out[12][12] = 1; out[12][20] = 1; }
+      if (stageIndex >= 2) { out[11][11] = 1; out[11][21] = 1; out[10][16] = 1; }
+      if (stageIndex >= 3) { out[10][10] = 1; out[10][22] = 1; out[9][16] = 1; }
+
+      return out;
+    }
+
+    const mirrorX = (matrix) => matrix.map((row) => [...row].reverse());
+    const treeVariantsMirrored = {
+      full: mirrorX(treeFull),
+      grazed: mirrorX(tree75),
+      half: mirrorX(tree50),
+      quarter: mirrorX(tree25),
+      depleted: mirrorX(tree0)
+    };
+    const level2Base = buildLevel2TreeBase();
+    const treeLevel2VariantsMirrored = {
+      full: mirrorX(buildLevel2Stage(level2Base, 0)),
+      grazed: mirrorX(buildLevel2Stage(level2Base, 1)),
+      half: mirrorX(buildLevel2Stage(level2Base, 2)),
+      quarter: mirrorX(buildLevel2Stage(level2Base, 3)),
+      depleted: mirrorX(buildLevel2Stage(level2Base, 4))
+    };
+    const level3Base = buildLevel3TreeBase();
+    const treeLevel3VariantsMirrored = {
+      full: mirrorX(buildLevel3Stage(level3Base, 0)),
+      grazed: mirrorX(buildLevel3Stage(level3Base, 1)),
+      half: mirrorX(buildLevel3Stage(level3Base, 2)),
+      quarter: mirrorX(buildLevel3Stage(level3Base, 3)),
+      depleted: mirrorX(buildLevel3Stage(level3Base, 4))
+    };
+
+    let playing = true;
+    let frame = 0;
+    let last = 0;
+    let treeOffset = 0;
+    let movementMode = 'graze'; // graze | right | left
+    const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
+    const treeTierAtIndex = (k) => {
+      const normalized = ((k % 6) + 6) % 6;
+      if (normalized === 5) return 3;
+      if (normalized === 3) return 2;
+      return 1;
+    };
+
+    function drawMatrix(matrix, xOff, yOff, scale, colors) {
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+          const v = matrix[r][c];
+          if (!v) continue;
+          ctx.fillStyle = colors[v];
+          ctx.fillRect((xOff + c) * scale, (yOff + r) * scale, scale, scale);
+        }
+      }
+    }
+
+    function baseTreeStage() {
+      const state = treeStateInput.value;
+      if (state === 'grazed') return 1;
+      if (state === 'half') return 2;
+      if (state === 'quarter') return 3;
+      if (state === 'depleted') return 4;
+      return 0;
+    }
+
+    function treeForStage(stage) {
+      if (stage === 1) return treeVariantsMirrored.grazed;
+      if (stage === 2) return treeVariantsMirrored.half;
+      if (stage === 3) return treeVariantsMirrored.quarter;
+      if (stage >= 4) return treeVariantsMirrored.depleted;
+      return treeVariantsMirrored.full;
+    }
+
+    function treeLevel2ForStage(stage) {
+      if (stage === 1) return treeLevel2VariantsMirrored.grazed;
+      if (stage === 2) return treeLevel2VariantsMirrored.half;
+      if (stage === 3) return treeLevel2VariantsMirrored.quarter;
+      if (stage >= 4) return treeLevel2VariantsMirrored.depleted;
+      return treeLevel2VariantsMirrored.full;
+    }
+
+    function treeLevel3ForStage(stage) {
+      if (stage === 1) return treeLevel3VariantsMirrored.grazed;
+      if (stage === 2) return treeLevel3VariantsMirrored.half;
+      if (stage === 3) return treeLevel3VariantsMirrored.quarter;
+      if (stage >= 4) return treeLevel3VariantsMirrored.depleted;
+      return treeLevel3VariantsMirrored.full;
+    }
+
+    function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, flipHorizontal = false) {
+      const width = matrix[0].length * scale;
+      const height = matrix.length * scale;
+      const px = xOff * scale;
+      const py = yOff * scale;
+
+      if (!flipHorizontal) {
+        drawMatrix(matrix, xOff, yOff, scale, colors);
+        return;
+      }
+
+      ctx.save();
+      // Keep the sprite upright while facing left.
+      ctx.translate(px + width, py);
+      ctx.scale(-1, 1);
+
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+          const v = matrix[r][c];
+          if (!v) continue;
+          ctx.fillStyle = colors[v];
+          ctx.fillRect(c * scale, r * scale, scale, scale);
+        }
+      }
+      ctx.restore();
+    }
+
+    function render(ts) {
+      const scale = Math.max(1, Math.min(18, Number(scaleInput.value) || 5));
+      const fps = Math.max(1, Math.min(12, Number(fpsInput.value) || 4));
+      const frameTime = 1000 / fps;
+      const moving = movementMode === 'right' || movementMode === 'left';
+      const activeFrames = moving ? walkFrames : grazeFrames;
+      const baseStage = baseTreeStage();
+
+      if (playing && ts - last >= frameTime) {
+        frame = (frame + 1) % activeFrames.length;
+        last = ts;
+      }
+
+      const cols = 70;
+      const rows = 54;
+      const treeY = 24;
+      scene.width = cols * scale;
+      scene.height = rows * scale;
+      ctx.clearRect(0, 0, scene.width, scene.height);
+
+      if (playing && movementMode === 'right') {
+        treeOffset -= 0.2;
+      } else if (playing && movementMode === 'left') {
+        treeOffset += 0.2;
+      }
+
+      const tilePeriod = treeVariantsMirrored.full[0].length;
+      const baseTreeX = 42 + treeOffset;
+      const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
+      const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
+      for (let k = kStart; k <= kEnd; k++) {
+        const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
+        const tier = treeTierAtIndex(k);
+        if (tier === 3) {
+          const tree = treeLevel3ForStage(stage);
+          drawMatrix(tree, baseTreeX + k * tilePeriod - 4, treeY - 16, scale, treePaletteLevel3);
+        } else if (tier === 2) {
+          const tree = treeLevel2ForStage(stage);
+          drawMatrix(tree, baseTreeX + k * tilePeriod - 3, treeY - 10, scale, treePaletteLevel2);
+        } else {
+          const tree = treeForStage(stage);
+          drawMatrix(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree);
+        }
+      }
+
+      drawMatrixTransformed(activeFrames[frame], 10, 12, scale, palette.giraffe, movementMode === 'left');
+
+      requestAnimationFrame(render);
+    }
+
+    toggle.addEventListener('click', () => {
+      playing = !playing;
+      toggle.textContent = playing ? 'Pause' : 'Play';
+    });
+
+    walkRightBtn.addEventListener('click', () => {
+      movementMode = movementMode === 'right' ? 'graze' : 'right';
+      walkRightBtn.textContent = movementMode === 'right' ? 'Stop Right' : 'Walk Right';
+      walkLeftBtn.textContent = 'Walk Left';
+      frame = 0;
+    });
+
+    walkLeftBtn.addEventListener('click', () => {
+      movementMode = movementMode === 'left' ? 'graze' : 'left';
+      walkLeftBtn.textContent = movementMode === 'left' ? 'Stop Left' : 'Walk Left';
+      walkRightBtn.textContent = 'Walk Right';
+      frame = 0;
+    });
+
+    scene.addEventListener('click', (event) => {
+      const scale = Math.max(1, Math.min(18, Number(scaleInput.value) || 5));
+      const rect = scene.getBoundingClientRect();
+      const xTile = (event.clientX - rect.left) / scale;
+      const yTile = (event.clientY - rect.top) / scale;
+
+      const tilePeriod = treeVariantsMirrored.full[0].length;
+      const baseTreeX = 42 + treeOffset;
+      const treeY = 24;
+      const k = Math.floor((xTile - baseTreeX) / tilePeriod);
+      const tier = treeTierAtIndex(k);
+      const treeX = baseTreeX + k * tilePeriod + (tier === 3 ? -4 : tier === 2 ? -3 : 0);
+      const effectiveTreeY = treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
+      const localX = Math.floor(xTile - treeX);
+      const localY = Math.floor(yTile - effectiveTreeY);
+
+      const baseStage = baseTreeStage();
+      const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
+      const currentTree =
+        tier === 3 ? treeLevel3ForStage(currentStage) :
+        tier === 2 ? treeLevel2ForStage(currentStage) :
+        treeForStage(currentStage);
+
+      if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) return;
+
+      // Green foliage tiles are primary click targets.
+      // For sparse stages, allow clicks anywhere inside the remaining canopy bounds.
+      let minX = Infinity;
+      let maxX = -1;
+      let minY = Infinity;
+      let maxY = -1;
+      for (let r = 0; r < currentTree.length; r++) {
+        for (let c = 0; c < currentTree[0].length; c++) {
+          if (isLeafValue(currentTree[r][c])) {
+            minX = Math.min(minX, c);
+            maxX = Math.max(maxX, c);
+            minY = Math.min(minY, r);
+            maxY = Math.max(maxY, r);
+          }
+        }
+      }
+
+      if (maxX === -1) return; // already depleted
+      const hitLeaf = isLeafValue(currentTree[localY][localX]);
+      const hitCanopyBounds =
+        localX >= minX && localX <= maxX &&
+        localY >= minY && localY <= maxY;
+      if (!hitLeaf && !hitCanopyBounds) return;
+
+      const nextStage = Math.min(4, currentStage + 1);
+      treeStageById.set(k, nextStage);
+    });
+
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
