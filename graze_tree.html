@@ -294,6 +294,7 @@
       tree: {1: '#6C4A2D', 2: '#5A9E46'}
     };
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
+    const treePaletteLevel3 = {1: '#6C4A2D', 2: '#2E8A35', 3: '#45A84A', 4: '#69BF63'};
 
     const cloneMatrix = (matrix) => matrix.map((row) => [...row]);
 
@@ -374,6 +375,98 @@
       return out;
     }
 
+    function buildLevel3TreeBase() {
+      const rows = 36;
+      const cols = 33;
+      const out = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+      // A taller, level-1-like acacia canopy with graduated green bands.
+      for (let c = 7; c <= 25; c++) out[0][c] = 4;
+      for (let r = 1; r <= 3; r++) for (let c = 5; c <= 27; c++) out[r][c] = 4;
+      for (let r = 4; r <= 8; r++) for (let c = 3; c <= 29; c++) out[r][c] = 3;
+      for (let r = 9; r <= 12; r++) for (let c = 4; c <= 28; c++) out[r][c] = 2;
+      for (let c = 8; c <= 24; c++) out[13][c] = 2;
+
+      // Taller trunk.
+      for (let r = 14; r < rows; r++) {
+        out[r][15] = 1;
+        out[r][16] = 1;
+        out[r][17] = 1;
+      }
+
+      // More exposed branches than level 2.
+      out[13][14] = 1; out[12][13] = 1; out[11][12] = 1; out[10][11] = 1;
+      out[13][18] = 1; out[12][19] = 1; out[11][20] = 1; out[10][21] = 1;
+      out[15][14] = 1; out[16][13] = 1; out[17][12] = 1;
+      out[15][18] = 1; out[16][19] = 1; out[17][20] = 1;
+      out[14][16] = 1; out[13][16] = 1; out[12][16] = 1; out[11][16] = 1;
+
+      return out;
+    }
+
+    function isLeafValue(v) {
+      return v >= 2;
+    }
+
+    function degradeLeaf(v) {
+      if (v === 4) return 3;
+      if (v === 3) return 2;
+      return 0;
+    }
+
+    function buildLevel3Stage(level3Base, stageIndex) {
+      const out = cloneMatrix(level3Base);
+      const eatProfile = [0.0, 0.2, 0.42, 0.66, 1.0];
+      const eatBase = eatProfile[Math.max(0, Math.min(4, stageIndex))];
+
+      for (let r = 0; r <= 13; r++) {
+        let left = -1;
+        let right = -1;
+        for (let c = 0; c < out[0].length; c++) {
+          if (isLeafValue(out[r][c])) {
+            if (left === -1) left = c;
+            right = c;
+          }
+        }
+        if (left === -1) continue;
+
+        const span = right - left + 1;
+        const uneven = (((r * 5) % 7) - 3) * 0.02;
+        const eatFrac = Math.max(0, Math.min(1, eatBase + uneven));
+        const cut = Math.floor(span * eatFrac);
+        const cutLeft = Math.max(left, right - cut);
+
+        for (let c = cutLeft; c <= right; c++) {
+          if (!isLeafValue(out[r][c])) continue;
+          out[r][c] = degradeLeaf(out[r][c]);
+          if (stageIndex >= 2) out[r][c] = degradeLeaf(out[r][c]);
+          if (stageIndex >= 4) out[r][c] = 0;
+        }
+
+        if (stageIndex >= 2) {
+          for (let c = Math.max(left, cutLeft - 8); c < cutLeft; c++) {
+            if ((r + c) % 4 === 0 && isLeafValue(out[r][c])) out[r][c] = degradeLeaf(out[r][c]);
+          }
+        }
+        if (stageIndex >= 3) {
+          for (let c = left; c <= Math.max(left, cutLeft - 3); c++) {
+            if ((r * 3 + c) % 5 === 0 && isLeafValue(out[r][c])) out[r][c] = 0;
+          }
+        }
+        if (stageIndex >= 4) {
+          for (let c = left; c <= right; c++) {
+            if (isLeafValue(out[r][c])) out[r][c] = 0;
+          }
+        }
+      }
+
+      if (stageIndex >= 1) { out[12][12] = 1; out[12][20] = 1; }
+      if (stageIndex >= 2) { out[11][11] = 1; out[11][21] = 1; out[10][16] = 1; }
+      if (stageIndex >= 3) { out[10][10] = 1; out[10][22] = 1; out[9][16] = 1; }
+
+      return out;
+    }
+
     const mirrorX = (matrix) => matrix.map((row) => [...row].reverse());
     const treeVariantsMirrored = {
       full: mirrorX(treeFull),
@@ -390,6 +483,14 @@
       quarter: mirrorX(buildLevel2Stage(level2Base, 3)),
       depleted: mirrorX(buildLevel2Stage(level2Base, 4))
     };
+    const level3Base = buildLevel3TreeBase();
+    const treeLevel3VariantsMirrored = {
+      full: mirrorX(buildLevel3Stage(level3Base, 0)),
+      grazed: mirrorX(buildLevel3Stage(level3Base, 1)),
+      half: mirrorX(buildLevel3Stage(level3Base, 2)),
+      quarter: mirrorX(buildLevel3Stage(level3Base, 3)),
+      depleted: mirrorX(buildLevel3Stage(level3Base, 4))
+    };
 
     let playing = true;
     let frame = 0;
@@ -397,7 +498,12 @@
     let treeOffset = 0;
     let movementMode = 'graze'; // graze | right | left
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
-    const isLevel2TreeIndex = (k) => ((k % 4) + 4) % 4 === 3;
+    const treeTierAtIndex = (k) => {
+      const normalized = ((k % 6) + 6) % 6;
+      if (normalized === 5) return 3;
+      if (normalized === 3) return 2;
+      return 1;
+    };
 
     function drawMatrix(matrix, xOff, yOff, scale, colors) {
       for (let r = 0; r < matrix.length; r++) {
@@ -433,6 +539,14 @@
       if (stage === 3) return treeLevel2VariantsMirrored.quarter;
       if (stage >= 4) return treeLevel2VariantsMirrored.depleted;
       return treeLevel2VariantsMirrored.full;
+    }
+
+    function treeLevel3ForStage(stage) {
+      if (stage === 1) return treeLevel3VariantsMirrored.grazed;
+      if (stage === 2) return treeLevel3VariantsMirrored.half;
+      if (stage === 3) return treeLevel3VariantsMirrored.quarter;
+      if (stage >= 4) return treeLevel3VariantsMirrored.depleted;
+      return treeLevel3VariantsMirrored.full;
     }
 
     function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, flipHorizontal = false) {
@@ -476,8 +590,8 @@
       }
 
       const cols = 70;
-      const rows = 40;
-      const treeY = 14;
+      const rows = 54;
+      const treeY = 24;
       scene.width = cols * scale;
       scene.height = rows * scale;
       ctx.clearRect(0, 0, scene.width, scene.height);
@@ -494,7 +608,11 @@
       const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
       for (let k = kStart; k <= kEnd; k++) {
         const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
-        if (isLevel2TreeIndex(k)) {
+        const tier = treeTierAtIndex(k);
+        if (tier === 3) {
+          const tree = treeLevel3ForStage(stage);
+          drawMatrix(tree, baseTreeX + k * tilePeriod - 4, treeY - 16, scale, treePaletteLevel3);
+        } else if (tier === 2) {
           const tree = treeLevel2ForStage(stage);
           drawMatrix(tree, baseTreeX + k * tilePeriod - 3, treeY - 10, scale, treePaletteLevel2);
         } else {
@@ -535,17 +653,20 @@
 
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
-      const treeY = 14;
+      const treeY = 24;
       const k = Math.floor((xTile - baseTreeX) / tilePeriod);
-      const isLevel2 = isLevel2TreeIndex(k);
-      const treeX = baseTreeX + k * tilePeriod + (isLevel2 ? -3 : 0);
-      const effectiveTreeY = treeY + (isLevel2 ? -10 : 0);
+      const tier = treeTierAtIndex(k);
+      const treeX = baseTreeX + k * tilePeriod + (tier === 3 ? -4 : tier === 2 ? -3 : 0);
+      const effectiveTreeY = treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
       const localX = Math.floor(xTile - treeX);
       const localY = Math.floor(yTile - effectiveTreeY);
 
       const baseStage = baseTreeStage();
       const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
-      const currentTree = isLevel2 ? treeLevel2ForStage(currentStage) : treeForStage(currentStage);
+      const currentTree =
+        tier === 3 ? treeLevel3ForStage(currentStage) :
+        tier === 2 ? treeLevel2ForStage(currentStage) :
+        treeForStage(currentStage);
 
       if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) return;
 
@@ -557,7 +678,7 @@
       let maxY = -1;
       for (let r = 0; r < currentTree.length; r++) {
         for (let c = 0; c < currentTree[0].length; c++) {
-          if (currentTree[r][c] === 2) {
+          if (isLeafValue(currentTree[r][c])) {
             minX = Math.min(minX, c);
             maxX = Math.max(maxX, c);
             minY = Math.min(minY, r);
@@ -567,7 +688,7 @@
       }
 
       if (maxX === -1) return; // already depleted
-      const hitLeaf = currentTree[localY][localX] === 2;
+      const hitLeaf = isLeafValue(currentTree[localY][localX]);
       const hitCanopyBounds =
         localX >= minX && localX <= maxX &&
         localY >= minY && localY <= maxY;
