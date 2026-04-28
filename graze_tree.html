@@ -528,7 +528,7 @@
 
     function drawClouds(cols, scale) {
       const cloudTilePeriod = 90;
-      const cloudOffset = treeOffset * 0.1; // subtle parallax: 1/10th tree speed
+      const cloudOffset = treeOffset * 0.2; // subtle parallax: 1/5th tree speed
       const baseCloudX = 8 + cloudOffset;
       const kStart = Math.floor((-(cloudTilePeriod) - baseCloudX) / cloudTilePeriod);
       const kEnd = Math.ceil((cols + cloudTilePeriod - baseCloudX) / cloudTilePeriod);
@@ -537,7 +537,7 @@
       ctx.save();
       ctx.globalAlpha = 0.9;
       for (let k = kStart; k <= kEnd; k++) {
-        if ((k % 2) !== 0) continue; // occasional clouds
+        if ((k % 3) === 1) continue; // more frequent clouds with light spacing variation
         const y = cloudRows[((k % cloudRows.length) + cloudRows.length) % cloudRows.length];
         drawMatrix(cloudSprite, baseCloudX + k * cloudTilePeriod, y, scale, cloudPalette);
       }
