@@ -488,6 +488,10 @@
     let treeOffset = 0;
     let movementMode = 'graze'; // graze | right | left
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
+    const treeStageHpById = new Map(); // `${k}:${stage}` -> hp remaining
+    const GIRAFFE_X = 10;
+    const GIRAFFE_W = giraffe[0].length;
+    const TREE_INTERACT_RANGE_X = 12;
     const treeTierAtIndex = (k) => {
       const normalized = ((k % 6) + 6) % 6;
       if (normalized === 5) return 3;
@@ -711,7 +715,22 @@
         localX >= minX && localX <= maxX &&
         localY >= minY && localY <= maxY;
       if (!hitLeaf && !hitCanopyBounds) return;
+      const treeTrunkX = treeX + Math.floor(currentTree[0].length / 2);
+      const giraffeFrontX = GIRAFFE_X + GIRAFFE_W - 1;
+      const giraffeBackX = GIRAFFE_X;
+      const giraffeMidX = Math.floor((giraffeFrontX + giraffeBackX) / 2);
+      const trunkDistance = Math.abs(treeTrunkX - giraffeMidX);
+      if (trunkDistance > TREE_INTERACT_RANGE_X) return;
 
+      const hpKey = `${k}:${currentStage}`;
+      const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : 10;
+      const nextHp = currentHp - 5;
+      if (nextHp > 0) {
+        treeStageHpById.set(hpKey, nextHp);
+        return;
+      }
+
+      treeStageHpById.set(hpKey, 0);
       const nextStage = Math.min(4, currentStage + 1);
       treeStageById.set(k, nextStage);
     });
