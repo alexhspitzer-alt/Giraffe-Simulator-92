@@ -489,6 +489,7 @@
     let movementMode = 'graze'; // graze | right | left
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
     const treeStageHpById = new Map(); // `${k}:${stage}` -> hp remaining
+    let xp = 0;
     const GIRAFFE_X = 10;
     const GIRAFFE_W = giraffe[0].length;
     const TREE_INTERACT_RANGE_X = 18;
@@ -534,6 +535,16 @@
         const y = cloudRows[((k % cloudRows.length) + cloudRows.length) % cloudRows.length];
         drawMatrix(cloudSprite, baseCloudX + k * cloudTilePeriod, y, scale, cloudPalette);
       }
+      ctx.restore();
+    }
+
+    function drawXpHud() {
+      ctx.save();
+      ctx.fillStyle = '#D9AE3B';
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`XP ${xp}`, scene.width - 10, 8);
       ctx.restore();
     }
 
@@ -642,6 +653,7 @@
           drawMatrix(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree);
         }
       }
+      drawXpHud();
 
       drawMatrixTransformed(activeFrames[frame], 10, 20, scale, palette.giraffe, movementMode === 'left');
 
@@ -733,6 +745,11 @@
       treeStageHpById.set(hpKey, 0);
       const nextStage = Math.min(4, currentStage + 1);
       treeStageById.set(k, nextStage);
+      if (nextStage === 4 && currentStage < 4) {
+        if (tier === 1) xp += 10;
+        else if (tier === 2) xp += 50;
+        else if (tier === 3) xp += 500;
+      }
     });
 
     requestAnimationFrame(render);
