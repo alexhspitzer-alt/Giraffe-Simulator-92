@@ -789,6 +789,7 @@
 
       // Apply any delayed stage advancements after rustle completes.
       for (const [k, pending] of pendingAdvanceById.entries()) {
+        if (!playing) continue;
         if (ts < pending.at) continue;
         treeStageById.set(k, pending.nextStage);
         if (pending.nextStage === 4 && pending.prevStage < 4) {
@@ -862,6 +863,7 @@
     });
 
     scene.addEventListener('click', (event) => {
+      if (!playing) return;
       if (levelUpPending) return;
       const scale = Math.max(1, Math.min(18, SIM_SCALE));
       const rect = scene.getBoundingClientRect();
