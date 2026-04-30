@@ -81,6 +81,13 @@
         <option value="quarter">25%</option>
         <option value="depleted">0%</option>
       </select>
+      <label for="timeOfDay">Time</label>
+      <select id="timeOfDay">
+        <option value="dawn">Dawn</option>
+        <option value="noon" selected>Noon</option>
+        <option value="dusk">Dusk</option>
+        <option value="night">Night</option>
+      </select>
       <button id="toggle">Pause</button>
       <button id="walkRight">Walk Right</button>
       <button id="walkLeft">Walk Left</button>
@@ -236,6 +243,7 @@
     const scaleInput = document.getElementById('scale');
     const fpsInput = document.getElementById('fps');
     const treeStateInput = document.getElementById('treeState');
+    const timeOfDayInput = document.getElementById('timeOfDay');
     const toggle = document.getElementById('toggle');
     const walkRightBtn = document.getElementById('walkRight');
     const walkLeftBtn = document.getElementById('walkLeft');
@@ -296,6 +304,12 @@
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
     const treePaletteLevel3 = {1: '#6C4A2D', 2: '#2E8A35', 3: '#45A84A', 4: '#69BF63'};
     const cloudPalette = {1: 'rgba(232, 242, 255, 0.3)', 2: 'rgba(255, 255, 255, 0.22)'};
+    const skyByTime = {
+      dawn: 'linear-gradient(#5f6fb3, #d68d79 66%, #486f42 66%, #486f42)',
+      noon: 'linear-gradient(#0f1e3a, #14274b 66%, #3f6d39 66%, #3f6d39)',
+      dusk: 'linear-gradient(#3f365b, #b35f6a 66%, #41593d 66%, #41593d)',
+      night: 'linear-gradient(#060b1e, #0f1734 66%, #243a2b 66%, #243a2b)'
+    };
 
     const cloneMatrix = (matrix) => matrix.map((row) => [...row]);
 
@@ -544,6 +558,10 @@
       ctx.restore();
     }
 
+    function applySkyForTimeOfDay() {
+      scene.style.background = skyByTime[timeOfDayInput.value] || skyByTime.noon;
+    }
+
     function baseTreeStage() {
       const state = treeStateInput.value;
       if (state === 'grazed') return 1;
@@ -673,6 +691,7 @@
       walkRightBtn.textContent = 'Walk Right';
       frame = 0;
     });
+    timeOfDayInput.addEventListener('change', applySkyForTimeOfDay);
 
     scene.addEventListener('click', (event) => {
       const scale = Math.max(1, Math.min(18, Number(scaleInput.value) || 5));
@@ -727,6 +746,7 @@
       treeStageById.set(k, nextStage);
     });
 
+    applySkyForTimeOfDay();
     requestAnimationFrame(render);
   </script>
 </body>

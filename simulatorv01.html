@@ -535,7 +535,8 @@
       ctx.save();
       ctx.globalAlpha = 0.9;
       for (let k = kStart; k <= kEnd; k++) {
-        if ((k % 3) === 1) continue; // more frequent clouds with light spacing variation
+        const cloudBand = ((k % 3) + 3) % 3;
+        if (cloudBand === 1) continue; // more frequent clouds with symmetric spacing variation
         const y = cloudRows[((k % cloudRows.length) + cloudRows.length) % cloudRows.length];
         drawMatrix(cloudSprite, baseCloudX + k * cloudTilePeriod, y, scale, cloudPalette);
       }
