@@ -667,7 +667,6 @@
     }
 
     function render(ts) {
-      applySkyFromSystemTime();
       const scale = Math.max(1, Math.min(18, SIM_SCALE));
       const fps = Math.max(1, Math.min(12, SIM_FPS));
       const frameTime = 1000 / fps;
@@ -826,6 +825,7 @@
       });
     });
 
+    applySkyFromSystemTime();
     requestAnimationFrame(render);
   </script>
 </body>
