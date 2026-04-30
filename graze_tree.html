@@ -268,7 +268,6 @@
       const headTop = 0;
       const headBottom = 5;
       const neckBottom = 11;
-      const neckCols = [17, 18, 19];
 
       // Place original sprite lower to create vertical room for a taller neck/head.
       for (let r = 0; r < matrix.length; r++) {
@@ -295,6 +294,10 @@
 
       const neckStart = headBottom;
       const neckEnd = neckBottom + extraRows;
+      const neckCols = [];
+      for (let c = 15; c < 23; c++) {
+        if (m[headBottom][c] !== 0) neckCols.push(c);
+      }
       for (const col of neckCols) {
         for (let r = neckStart; r <= neckEnd; r++) {
           if (m[r][col] === 0) setPx(m, r, col, 1);
