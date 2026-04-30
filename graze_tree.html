@@ -88,6 +88,13 @@
         <option value="dusk">Dusk</option>
         <option value="night">Night</option>
       </select>
+      <label for="neckBoost">Neck+</label>
+      <select id="neckBoost">
+        <option value="0" selected>0cm</option>
+        <option value="1">30cm</option>
+        <option value="2">60cm</option>
+        <option value="3">90cm</option>
+      </select>
       <button id="toggle">Pause</button>
       <button id="walkRight">Walk Right</button>
       <button id="walkLeft">Walk Left</button>
@@ -244,12 +251,44 @@
     const fpsInput = document.getElementById('fps');
     const treeStateInput = document.getElementById('treeState');
     const timeOfDayInput = document.getElementById('timeOfDay');
+    const neckBoostInput = document.getElementById('neckBoost');
     const toggle = document.getElementById('toggle');
     const walkRightBtn = document.getElementById('walkRight');
     const walkLeftBtn = document.getElementById('walkLeft');
 
     const clone = (m) => m.map((row) => [...row]);
     const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+    function applyNeckBoost(matrix, neckLevel) {
+      const extraRows = Math.max(0, neckLevel) * 8;
+      if (!extraRows) return matrix;
+      const m = clone(matrix);
+
+      for (let r = 0; r < 12; r++) {
+        for (let c = 15; c < 23; c++) {
+          setPx(m, r, c, 0);
+        }
+      }
+
+      for (let r = 0; r < 12; r++) {
+        for (let c = 15; c < 23; c++) {
+          const v = matrix[r][c];
+          if (!v) continue;
+          const newR = clamp(r - extraRows, 0, m.length - 1);
+          setPx(m, newR, c, v);
+        }
+      }
+
+      const neckCols = [17, 18, 19];
+      for (const col of neckCols) {
+        for (let r = 0; r < 12; r++) {
+          if (m[r][col] === 0) setPx(m, r, col, 1);
+        }
+      }
+
+      return m;
+    }
 
     function makeWalkA() {
       const m = clone(giraffe);
@@ -628,6 +667,7 @@
       const frameTime = 1000 / fps;
       const moving = movementMode === 'right' || movementMode === 'left';
       const activeFrames = moving ? walkFrames : grazeFrames;
+      const neckLevel = Number(neckBoostInput.value) || 0;
       const baseStage = baseTreeStage();
 
       if (playing && ts - last >= frameTime) {
@@ -668,7 +708,8 @@
         }
       }
 
-      drawMatrixTransformed(activeFrames[frame], 10, 20, scale, palette.giraffe, movementMode === 'left');
+      const neckAdjustedFrame = applyNeckBoost(activeFrames[frame], neckLevel);
+      drawMatrixTransformed(neckAdjustedFrame, 10, 20, scale, palette.giraffe, movementMode === 'left');
 
       requestAnimationFrame(render);
     }
