@@ -285,6 +285,12 @@
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
     const treePaletteLevel3 = {1: '#6C4A2D', 2: '#2E8A35', 3: '#45A84A', 4: '#69BF63'};
     const cloudPalette = {1: 'rgba(232, 242, 255, 0.3)', 2: 'rgba(255, 255, 255, 0.22)'};
+    const skyByTime = {
+      dawn: 'linear-gradient(#5f6fb3, #d68d79 66%, #486f42 66%, #486f42)',
+      noon: 'linear-gradient(#2f78cf, #71b7f3 66%, #4c8447 66%, #4c8447)',
+      dusk: 'linear-gradient(#3f365b, #b35f6a 66%, #41593d 66%, #41593d)',
+      night: 'linear-gradient(#060b1e, #0f1734 66%, #243a2b 66%, #243a2b)'
+    };
 
     const cloneMatrix = (matrix) => matrix.map((row) => [...row]);
 
@@ -492,6 +498,7 @@
     const treeRustleUntilById = new Map(); // k -> timestamp(ms) when rustle ends
     const pendingAdvanceById = new Map(); // k -> {at, nextStage, prevStage, tier}
     let xp = 0;
+    let activeSkyTime = '';
     const GIRAFFE_X = 10;
     const GIRAFFE_W = giraffe[0].length;
     const TREE_INTERACT_RANGE_X = 18;
@@ -551,6 +558,21 @@
       ctx.textBaseline = 'top';
       ctx.fillText(`XP ${xp}`, scene.width - 10, 8);
       ctx.restore();
+    }
+
+    function skyTimeFromSystemHour() {
+      const hour = new Date().getHours();
+      if (hour >= 4 && hour <= 9) return 'dawn';
+      if (hour >= 10 && hour <= 14) return 'noon';
+      if (hour >= 15 && hour <= 19) return 'dusk';
+      return 'night';
+    }
+
+    function applySkyFromSystemTime() {
+      const skyTime = skyTimeFromSystemHour();
+      if (skyTime === activeSkyTime) return;
+      activeSkyTime = skyTime;
+      scene.style.background = skyByTime[skyTime] || skyByTime.noon;
     }
 
     function rustleOffsetForTree(k, nowTs) {
@@ -645,6 +667,7 @@
     }
 
     function render(ts) {
+      applySkyFromSystemTime();
       const scale = Math.max(1, Math.min(18, SIM_SCALE));
       const fps = Math.max(1, Math.min(12, SIM_FPS));
       const frameTime = 1000 / fps;
