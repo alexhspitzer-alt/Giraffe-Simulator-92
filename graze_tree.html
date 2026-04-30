@@ -293,11 +293,11 @@
         }
       }
 
-      const neckStart = headBottom + 1;
+      const neckStart = headBottom;
       const neckEnd = neckBottom + extraRows;
       for (const col of neckCols) {
         for (let r = neckStart; r <= neckEnd; r++) {
-          setPx(m, r, col, 1);
+          if (m[r][col] === 0) setPx(m, r, col, 1);
         }
       }
 
