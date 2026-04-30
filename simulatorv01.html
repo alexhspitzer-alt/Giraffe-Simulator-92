@@ -282,6 +282,39 @@
 
     const clone = (m) => m.map((row) => [...row]);
     const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
+    function applyNeckBoost(matrix, neckLevel) {
+      const extraRows = Math.max(0, neckLevel) * 4;
+      if (!extraRows) return { matrix, yAdjust: 0 };
+      const rows = matrix.length + extraRows;
+      const cols = matrix[0].length;
+      const m = Array.from({ length: rows }, () => Array(cols).fill(0));
+      const headTop = 0;
+      const headBottom = 8;
+      const neckBottom = 11;
+
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < cols; c++) setPx(m, r + extraRows, c, matrix[r][c]);
+      }
+      for (let r = headTop; r <= headBottom; r++) {
+        for (let c = 15; c < 23; c++) setPx(m, r + extraRows, c, 0);
+      }
+      for (let r = headTop; r <= headBottom; r++) {
+        for (let c = 15; c < 23; c++) {
+          const v = matrix[r][c];
+          if (v) setPx(m, r, c, v);
+        }
+      }
+      const neckStart = headBottom;
+      const neckEnd = neckBottom + extraRows;
+      const neckCols = [];
+      for (let c = 15; c < 23; c++) if (m[headBottom][c] !== 0) neckCols.push(c);
+      for (const col of neckCols) {
+        for (let r = neckStart; r <= neckEnd; r++) {
+          if (m[r][col] === 0) setPx(m, r, col, 1);
+        }
+      }
+      return { matrix: m, yAdjust: -extraRows };
+    }
 
     function makeWalkA() {
       const m = clone(giraffe);
@@ -617,6 +650,12 @@
       ctx.fillText(`LVL ${level} | XP ${xp}/${nextLevelXp(level)}`, scene.width - 10, 8);
       ctx.restore();
     }
+    function maxHpForStage(stage) {
+      if (stage === 1) return 15; // stage 2 gets +5
+      if (stage === 2) return 15; // stage 3 gets +5
+      if (stage === 3) return 20; // stage 4 gets +10
+      return 10;
+    }
 
     function availableUpgrades() {
       return nextUpgradeCards(playerUpgradeLevels);
@@ -838,7 +877,9 @@
       }
       drawXpHud();
 
-      drawMatrixTransformed(activeFrames[frame], 10, 20, scale, palette.giraffe, movementMode === 'left');
+      const neckLevel = playerUpgradeLevels['long-horse'] || 0;
+      const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
+      drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
 
       requestAnimationFrame(render);
     }
@@ -920,7 +961,7 @@
       if (trunkDistance > TREE_INTERACT_RANGE_X) return;
 
       const hpKey = `${k}:${currentStage}`;
-      const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : 10;
+      const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : maxHpForStage(currentStage);
       const nextHp = currentHp - 5;
       const rustleUntil = performance.now() + RUSTLE_MS;
       treeRustleUntilById.set(k, rustleUntil);
