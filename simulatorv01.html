@@ -120,6 +120,7 @@
     </section>
   </main>
 
+  <script src="./progression.js"></script>
   <script>
     const giraffe = [
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],
@@ -264,6 +265,7 @@
       [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
     ];
 
+    const progressionConfig = window.PROGRESSION || {};
     const scene = document.getElementById('scene');
     const ctx = scene.getContext('2d');
     const toggle = document.getElementById('toggle');
@@ -550,14 +552,8 @@
     let level = 1;
     let selectedUpgradeId = null;
     let levelUpPending = false;
-    const nextLevelXp = (lvl) => lvl * 100;
-    const upgradePool = [
-      {id: 'swift-legs', title: 'Swift Legs', desc: '+10% movement speed'},
-      {id: 'iron-stomach', title: 'Iron Stomach', desc: '+20% graze efficiency'},
-      {id: 'tough-hide', title: 'Tough Hide', desc: '+15% survivability'},
-      {id: 'keen-eyes', title: 'Keen Eyes', desc: '+15% range awareness'},
-      {id: 'forager', title: 'Forager', desc: '+10% XP from trees'}
-    ];
+    const nextLevelXp = progressionConfig.nextLevelXp || ((lvl) => lvl * 100);
+    const upgradePool = progressionConfig.upgradePool || [];
     const playerUpgrades = new Set();
     let activeSkyTime = '';
     const GIRAFFE_X = 10;
