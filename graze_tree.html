@@ -260,7 +260,12 @@
     const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
 
     function applyNeckBoost(matrix, neckLevel) {
-      const extraRows = Math.max(0, neckLevel) * 8;
+      // Neck boost pipeline:
+      // 1) Create extra vertical space.
+      // 2) Shift the base sprite downward into that space.
+      // 3) Move the head region upward.
+      // 4) Rebuild a continuous neck from head base to torso.
+      const extraRows = Math.max(0, neckLevel) * 4;
       if (!extraRows) return { matrix, yAdjust: 0 };
       const rows = matrix.length + extraRows;
       const cols = matrix[0].length;
