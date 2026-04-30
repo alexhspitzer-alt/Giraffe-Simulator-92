@@ -489,10 +489,14 @@
     let movementMode = 'graze'; // graze | right | left
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
     const treeStageHpById = new Map(); // `${k}:${stage}` -> hp remaining
+    const treeRustleUntilById = new Map(); // k -> timestamp(ms) when rustle ends
+    const pendingAdvanceById = new Map(); // k -> {at, nextStage, prevStage, tier}
     let xp = 0;
     const GIRAFFE_X = 10;
     const GIRAFFE_W = giraffe[0].length;
     const TREE_INTERACT_RANGE_X = 18;
+    const RUSTLE_MS = 220;
+    const ADVANCE_DELAY_AFTER_RUSTLE_MS = 100;
     const treeTierAtIndex = (k) => {
       const normalized = ((k % 6) + 6) % 6;
       if (normalized === 5) return 3;
@@ -546,6 +550,16 @@
       ctx.textBaseline = 'top';
       ctx.fillText(`XP ${xp}`, scene.width - 10, 8);
       ctx.restore();
+    }
+
+    function rustleOffsetForTree(k, nowTs) {
+      const until = treeRustleUntilById.get(k);
+      if (!until || nowTs >= until) return 0;
+      const t = until - nowTs;
+      const phase = Math.floor(t / 40) % 3;
+      if (phase === 0) return -1;
+      if (phase === 1) return 1;
+      return 0;
     }
 
     function baseTreeStage() {
@@ -621,6 +635,18 @@
         last = ts;
       }
 
+      // Apply any delayed stage advancements after rustle completes.
+      for (const [k, pending] of pendingAdvanceById.entries()) {
+        if (ts < pending.at) continue;
+        treeStageById.set(k, pending.nextStage);
+        if (pending.nextStage === 4 && pending.prevStage < 4) {
+          if (pending.tier === 1) xp += 10;
+          else if (pending.tier === 2) xp += 50;
+          else if (pending.tier === 3) xp += 500;
+        }
+        pendingAdvanceById.delete(k);
+      }
+
       const cols = 70;
       const rows = 54;
       const treeY = 24;
@@ -642,15 +668,16 @@
       for (let k = kStart; k <= kEnd; k++) {
         const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
         const tier = treeTierAtIndex(k);
+        const rustleX = rustleOffsetForTree(k, ts);
         if (tier === 3) {
           const tree = treeLevel3ForStage(stage);
-          drawMatrix(tree, baseTreeX + k * tilePeriod - 4, treeY - 16, scale, treePaletteLevel3);
+          drawMatrix(tree, baseTreeX + k * tilePeriod - 4 + rustleX, treeY - 16, scale, treePaletteLevel3);
         } else if (tier === 2) {
           const tree = treeLevel2ForStage(stage);
-          drawMatrix(tree, baseTreeX + k * tilePeriod - 3, treeY - 10, scale, treePaletteLevel2);
+          drawMatrix(tree, baseTreeX + k * tilePeriod - 3 + rustleX, treeY - 10, scale, treePaletteLevel2);
         } else {
           const tree = treeForStage(stage);
-          drawMatrix(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree);
+          drawMatrix(tree, baseTreeX + k * tilePeriod + rustleX, treeY, scale, palette.tree);
         }
       }
       drawXpHud();
@@ -737,6 +764,8 @@
       const hpKey = `${k}:${currentStage}`;
       const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : 10;
       const nextHp = currentHp - 5;
+      const rustleUntil = performance.now() + RUSTLE_MS;
+      treeRustleUntilById.set(k, rustleUntil);
       if (nextHp > 0) {
         treeStageHpById.set(hpKey, nextHp);
         return;
@@ -744,12 +773,12 @@
 
       treeStageHpById.set(hpKey, 0);
       const nextStage = Math.min(4, currentStage + 1);
-      treeStageById.set(k, nextStage);
-      if (nextStage === 4 && currentStage < 4) {
-        if (tier === 1) xp += 10;
-        else if (tier === 2) xp += 50;
-        else if (tier === 3) xp += 500;
-      }
+      pendingAdvanceById.set(k, {
+        at: rustleUntil + ADVANCE_DELAY_AFTER_RUSTLE_MS,
+        nextStage,
+        prevStage: currentStage,
+        tier
+      });
     });
 
     requestAnimationFrame(render);
