@@ -551,10 +551,11 @@
     let xp = 0;
     let level = 1;
     let selectedUpgradeId = null;
+    let selectedUpgradePathId = null;
     let levelUpPending = false;
     const nextLevelXp = progressionConfig.nextLevelXp || ((lvl) => lvl * 100);
-    const upgradePool = progressionConfig.upgradePool || [];
-    const playerUpgrades = new Set();
+    const nextUpgradeCards = progressionConfig.nextUpgradeCards || (() => []);
+    const playerUpgradeLevels = {};
     let activeSkyTime = '';
     const GIRAFFE_X = 10;
     const GIRAFFE_W = giraffe[0].length;
@@ -618,7 +619,7 @@
     }
 
     function availableUpgrades() {
-      return upgradePool.filter((u) => !playerUpgrades.has(u.id));
+      return nextUpgradeCards(playerUpgradeLevels);
     }
 
     function chooseUpgradeOptions() {
@@ -634,6 +635,7 @@
       const options = chooseUpgradeOptions();
       if (!options.length) return;
       selectedUpgradeId = null;
+      selectedUpgradePathId = null;
       levelUpPending = true;
       playing = false;
       toggle.textContent = 'Play';
@@ -647,6 +649,7 @@
         button.innerHTML = `<div class="title">${option.title}</div><div class="desc">${option.desc}</div>`;
         button.addEventListener('click', () => {
           selectedUpgradeId = option.id;
+          selectedUpgradePathId = option.pathId;
           for (const card of upgradeCards.querySelectorAll('.upgrade-card')) {
             card.classList.toggle('selected', card.dataset.upgradeId === selectedUpgradeId);
           }
@@ -660,6 +663,7 @@
       levelFrame.classList.add('hidden');
       levelUpPending = false;
       selectedUpgradeId = null;
+      selectedUpgradePathId = null;
       playing = true;
       toggle.textContent = 'Pause';
     }
@@ -937,7 +941,10 @@
 
     continueBtn.addEventListener('click', () => {
       if (!selectedUpgradeId) return;
-      playerUpgrades.add(selectedUpgradeId);
+      if (selectedUpgradePathId) {
+        const current = playerUpgradeLevels[selectedUpgradePathId] || 0;
+        playerUpgradeLevels[selectedUpgradePathId] = current + 1;
+      }
       level += 1;
       closeLevelUpFrame();
       if (xp >= nextLevelXp(level)) {
