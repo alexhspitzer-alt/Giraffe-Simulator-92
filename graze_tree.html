@@ -258,41 +258,50 @@
 
     const clone = (m) => m.map((row) => [...row]);
     const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
-    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
     function applyNeckBoost(matrix, neckLevel) {
       const extraRows = Math.max(0, neckLevel) * 8;
-      if (!extraRows) return matrix;
-      const m = clone(matrix);
+      if (!extraRows) return { matrix, yAdjust: 0 };
+      const rows = matrix.length + extraRows;
+      const cols = matrix[0].length;
+      const m = Array.from({ length: rows }, () => Array(cols).fill(0));
       const headTop = 0;
       const headBottom = 5;
       const neckBottom = 11;
       const neckCols = [17, 18, 19];
 
-      for (let r = 0; r < 12; r++) {
-        for (let c = 15; c < 23; c++) {
-          setPx(m, r, c, 0);
+      // Place original sprite lower to create vertical room for a taller neck/head.
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < cols; c++) {
+          setPx(m, r + extraRows, c, matrix[r][c]);
         }
       }
 
+      // Clear old head+neck source area in the shifted sprite.
+      for (let r = headTop; r <= headBottom; r++) {
+        for (let c = 15; c < 23; c++) {
+          setPx(m, r + extraRows, c, 0);
+        }
+      }
+
+      // Reposition head at the top of the expanded matrix.
       for (let r = headTop; r <= headBottom; r++) {
         for (let c = 15; c < 23; c++) {
           const v = matrix[r][c];
           if (!v) continue;
-          const newR = clamp(r - extraRows, 0, neckBottom);
-          setPx(m, newR, c, v);
+          setPx(m, r, c, v);
         }
       }
 
-      const shiftedHeadBottom = clamp(headBottom - extraRows, 0, neckBottom);
-      const neckStart = shiftedHeadBottom + 1;
+      const neckStart = headBottom + 1;
+      const neckEnd = neckBottom + extraRows;
       for (const col of neckCols) {
-        for (let r = neckStart; r <= neckBottom; r++) {
+        for (let r = neckStart; r <= neckEnd; r++) {
           setPx(m, r, col, 1);
         }
       }
 
-      return m;
+      return { matrix: m, yAdjust: -extraRows };
     }
 
     function makeWalkA() {
@@ -713,8 +722,8 @@
         }
       }
 
-      const neckAdjustedFrame = applyNeckBoost(activeFrames[frame], neckLevel);
-      drawMatrixTransformed(neckAdjustedFrame, 10, 20, scale, palette.giraffe, movementMode === 'left');
+      const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
+      drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
 
       requestAnimationFrame(render);
     }
