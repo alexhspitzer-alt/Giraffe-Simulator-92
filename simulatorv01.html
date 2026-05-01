@@ -636,6 +636,7 @@
     const TURBO_TREE_RANGE_X = 25;
     let turboUntil = 0;
     let turboWasActive = false;
+    let lastChompFxAt = 0;
     const GIRAFFE_X = 10;
     const GIRAFFE_W = giraffe[0].length;
     const TREE_INTERACT_RANGE_X = 18;
@@ -1079,20 +1080,25 @@
       const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : maxHpForStage(currentStage);
       const critLevel = playerUpgradeLevels['crits-r-us'] || 0;
       const critChance = Math.max(0, critLevel * 0.02);
-      const critHit = Math.random() < critChance;
+      const turboCrit = isTurboActive();
+      const critHit = turboCrit || Math.random() < critChance;
       const damage = Math.ceil(baseBiteDamage() * (critHit ? 3 : 1));
       const nextHp = currentHp - damage;
       if (critHit) {
-        const neckLevel = playerUpgradeLevels['long-horse'] || 0;
-        const neckRaise = neckLevel * 4;
-        const headX = (GIRAFFE_X + 18) * scale;
-        const headY = (20 - neckRaise + 2) * scale;
-        chompFx = {
-          at: performance.now(),
-          until: performance.now() + 520,
-          x: headX + 4 * scale,
-          y: headY - 4 * scale
-        };
+        const now = performance.now();
+        if (now - lastChompFxAt >= 500) {
+          const neckLevel = playerUpgradeLevels['long-horse'] || 0;
+          const neckRaise = neckLevel * 4;
+          const headX = (GIRAFFE_X + 18) * scale;
+          const headY = (20 - neckRaise + 2) * scale;
+          chompFx = {
+            at: now,
+            until: now + 520,
+            x: headX + 4 * scale,
+            y: headY - 4 * scale
+          };
+          lastChompFxAt = now;
+        }
       }
       const rustleUntil = performance.now() + RUSTLE_MS;
       treeRustleUntilById.set(k, rustleUntil);
