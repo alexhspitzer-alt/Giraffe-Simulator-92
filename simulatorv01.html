@@ -87,6 +87,32 @@
       font-size: 0.9rem;
     }
     .hidden { display: none; }
+    .rumen-progress {
+      width: 100%;
+      height: 18px;
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent;
+      border: 1px solid #3b4f73;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .rumen-progress::-webkit-progress-bar { background: transparent; }
+    .rumen-progress::-webkit-progress-value {
+      background: #4CAF50;
+      transition: background-color 180ms ease;
+    }
+    .rumen-progress::-moz-progress-bar {
+      background: #4CAF50;
+      transition: background-color 180ms ease;
+    }
+    .rumen-progress.gold::-webkit-progress-value { background: #D9AE3B; }
+    .rumen-progress.gold::-moz-progress-bar { background: #D9AE3B; }
+    .rumen-title {
+      margin: 8px 0 0;
+      text-align: center;
+    }
+
     input, button {
       background: #101827;
       color: #e7edf7;
@@ -111,6 +137,13 @@
       <h2 id="levelTitle">Level Up</h2>
       <div id="upgradeCards" class="upgrades"></div>
       <button id="continueBtn">Continue</button>
+    </section>
+
+    <section id="rumenFrame" class="frame" aria-label="Rumen progression">
+      <progress id="treeProgress" class="rumen-progress" max="50" value="0"></progress>
+      <div id="treeProgressLabel" style="margin-top: 6px; color: #b9c7df; font-size: 0.9rem; text-align: center;">0 / 50 L</div>
+      <h2 class="rumen-title">Rumen</h2>
+      <div id="rumenHint" style="margin-top: 4px; color: #8fc4ff; font-size: 0.85rem; text-align: center;">Fill to 30L to activate Turbo</div>
     </section>
 
     <section class="controls" aria-label="Simulator controls">
@@ -275,6 +308,10 @@
     const levelTitle = document.getElementById('levelTitle');
     const upgradeCards = document.getElementById('upgradeCards');
     const continueBtn = document.getElementById('continueBtn');
+    const treeProgress = document.getElementById('treeProgress');
+    const treeProgressLabel = document.getElementById('treeProgressLabel');
+    const rumenFrame = document.getElementById('rumenFrame');
+    const rumenHint = document.getElementById('rumenHint');
 
     const SIM_SCALE = 5;
     const SIM_FPS = 4;
@@ -591,6 +628,15 @@
     const playerUpgradeLevels = {};
     let activeSkyTime = '';
     let chompFx = null; // {until, at, x, y}
+    let treeProgressLiters = 0;
+    const RUMEN_MAX_LITERS = 50;
+    const RUMEN_GOLD_THRESHOLD_LITERS = 30;
+    const TURBO_SPEED_MULTIPLIER = 2;
+    const TURBO_FPS = 10;
+    const TURBO_TREE_RANGE_X = 25;
+    let turboUntil = 0;
+    let turboWasActive = false;
+    let lastChompFxAt = 0;
     const GIRAFFE_X = 10;
     const GIRAFFE_W = giraffe[0].length;
     const TREE_INTERACT_RANGE_X = 18;
@@ -678,7 +724,22 @@
     }
     function movementSpeedPerFrame() {
       const legDayLevel = playerUpgradeLevels['leg-day'] || 0;
-      return 0.2 * Math.pow(1.05, legDayLevel);
+      const baseSpeed = 0.2 * Math.pow(1.05, legDayLevel);
+      return isTurboActive() ? baseSpeed * TURBO_SPEED_MULTIPLIER : baseSpeed;
+    }
+
+    function isTurboActive(nowTs = performance.now()) {
+      return nowTs < turboUntil;
+    }
+
+    function activateTurbo() {
+      if (treeProgressLiters < RUMEN_GOLD_THRESHOLD_LITERS) return false;
+      const litersAtActivation = treeProgressLiters;
+      const durationSeconds = Math.max(6, Math.min(10, Math.floor(litersAtActivation / 5)));
+      turboUntil = performance.now() + durationSeconds * 1000;
+      treeProgressLiters = 0;
+      syncTreeProgressUi();
+      return true;
     }
 
     function availableUpgrades() {
@@ -777,6 +838,23 @@
       }
     }
 
+
+    function syncTreeProgressUi() {
+      if (treeProgress) treeProgress.value = treeProgressLiters;
+      if (treeProgressLabel) treeProgressLabel.textContent = `${treeProgressLiters} / ${RUMEN_MAX_LITERS} L`;
+      if (treeProgress) treeProgress.classList.toggle('gold', treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS);
+      if (rumenHint) {
+        if (isTurboActive()) rumenHint.textContent = 'Turbo active';
+        else if (treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS) rumenHint.textContent = 'Click Rumen to activate Turbo';
+        else rumenHint.textContent = 'Fill to 30L to activate Turbo';
+      }
+    }
+
+    function advanceTreeProgress() {
+      treeProgressLiters = Math.min(RUMEN_MAX_LITERS, treeProgressLiters + 1);
+      syncTreeProgressUi();
+    }
+
     function baseTreeStage() {
       const state = SIM_TREE_STATE;
       if (state === 'grazed') return 1;
@@ -839,11 +917,16 @@
 
     function render(ts) {
       const scale = Math.max(1, Math.min(18, SIM_SCALE));
-      const fps = Math.max(1, Math.min(12, SIM_FPS));
+      const fps = isTurboActive(ts) ? TURBO_FPS : Math.max(1, Math.min(12, SIM_FPS));
       const frameTime = 1000 / fps;
       const moving = movementMode === 'right' || movementMode === 'left';
       const activeFrames = moving ? walkFrames : grazeFrames;
       const baseStage = baseTreeStage();
+      const turboActiveNow = isTurboActive(ts);
+      if (turboActiveNow !== turboWasActive) {
+        turboWasActive = turboActiveNow;
+        syncTreeProgressUi();
+      }
 
       if (playing && ts - last >= frameTime) {
         frame = (frame + 1) % activeFrames.length;
@@ -855,6 +938,7 @@
         if (!playing) continue;
         if (ts < pending.at) continue;
         treeStageById.set(k, pending.nextStage);
+        if (pending.nextStage > pending.prevStage) advanceTreeProgress();
         if (pending.nextStage === 4 && pending.prevStage < 4) {
           if (pending.tier === 1) xp += 10;
           else if (pending.tier === 2) xp += 50;
@@ -989,28 +1073,37 @@
       const giraffeBackX = GIRAFFE_X;
       const giraffeMidX = Math.floor((giraffeFrontX + giraffeBackX) / 2);
       const trunkDistance = Math.abs(treeTrunkX - giraffeMidX);
-      if (trunkDistance > TREE_INTERACT_RANGE_X) return;
+      const treeInteractRange = isTurboActive() ? TURBO_TREE_RANGE_X : TREE_INTERACT_RANGE_X;
+      if (trunkDistance > treeInteractRange) return;
 
       const hpKey = `${k}:${currentStage}`;
       const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : maxHpForStage(currentStage);
       const critLevel = playerUpgradeLevels['crits-r-us'] || 0;
       const critChance = Math.max(0, critLevel * 0.02);
-      const critHit = Math.random() < critChance;
+      const turboCrit = isTurboActive();
+      const critHit = turboCrit || Math.random() < critChance;
       const damage = Math.ceil(baseBiteDamage() * (critHit ? 3 : 1));
       const nextHp = currentHp - damage;
       if (critHit) {
-        const neckLevel = playerUpgradeLevels['long-horse'] || 0;
-        const neckRaise = neckLevel * 4;
-        const headX = (GIRAFFE_X + 18) * scale;
-        const headY = (20 - neckRaise + 2) * scale;
-        chompFx = {
-          at: performance.now(),
-          until: performance.now() + 520,
-          x: headX + 4 * scale,
-          y: headY - 4 * scale
-        };
+        const now = performance.now();
+        if (now - lastChompFxAt >= 500) {
+          const neckLevel = playerUpgradeLevels['long-horse'] || 0;
+          const neckRaise = neckLevel * 4;
+          const headX = (GIRAFFE_X + 18) * scale;
+          const headY = (20 - neckRaise + 2) * scale;
+          chompFx = {
+            at: now,
+            until: now + 520,
+            x: headX + 4 * scale,
+            y: headY - 4 * scale
+          };
+          lastChompFxAt = now;
+        }
       }
-      const rustleUntil = performance.now() + RUSTLE_MS;
+      const turboActive = isTurboActive();
+      const rustleDurationMs = RUSTLE_MS;
+      const advanceDelayMs = turboActive ? 0 : ADVANCE_DELAY_AFTER_RUSTLE_MS;
+      const rustleUntil = performance.now() + rustleDurationMs;
       treeRustleUntilById.set(k, rustleUntil);
       if (nextHp > 0) {
         treeStageHpById.set(hpKey, nextHp);
@@ -1020,11 +1113,18 @@
       treeStageHpById.set(hpKey, 0);
       const nextStage = Math.min(4, currentStage + 1);
       pendingAdvanceById.set(k, {
-        at: rustleUntil + ADVANCE_DELAY_AFTER_RUSTLE_MS,
+        at: rustleUntil + advanceDelayMs,
         nextStage,
         prevStage: currentStage,
         tier
       });
+    });
+
+
+    rumenFrame.addEventListener('click', () => {
+      if (!playing) return;
+      activateTurbo();
+      syncTreeProgressUi();
     });
 
     continueBtn.addEventListener('click', () => {
@@ -1041,6 +1141,7 @@
     });
 
     applySkyFromSystemTime();
+    syncTreeProgressUi();
     requestAnimationFrame(render);
   </script>
 </body>
