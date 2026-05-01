@@ -87,6 +87,32 @@
       font-size: 0.9rem;
     }
     .hidden { display: none; }
+    .rumen-progress {
+      width: 100%;
+      height: 18px;
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent;
+      border: 1px solid #3b4f73;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .rumen-progress::-webkit-progress-bar { background: transparent; }
+    .rumen-progress::-webkit-progress-value {
+      background: #4CAF50;
+      transition: background-color 180ms ease;
+    }
+    .rumen-progress::-moz-progress-bar {
+      background: #4CAF50;
+      transition: background-color 180ms ease;
+    }
+    .rumen-progress.gold::-webkit-progress-value { background: #D9AE3B; }
+    .rumen-progress.gold::-moz-progress-bar { background: #D9AE3B; }
+    .rumen-title {
+      margin: 8px 0 0;
+      text-align: center;
+    }
+
     input, button {
       background: #101827;
       color: #e7edf7;
@@ -113,10 +139,10 @@
       <button id="continueBtn">Continue</button>
     </section>
 
-    <section class="frame" aria-label="Tree progression">
-      <h2>Tree Progress</h2>
-      <progress id="treeProgress" max="100" value="0" style="width: 100%; height: 18px;"></progress>
-      <div id="treeProgressLabel" style="margin-top: 6px; color: #b9c7df; font-size: 0.9rem;">0 / 100 bits</div>
+    <section class="frame" aria-label="Rumen progression">
+      <progress id="treeProgress" class="rumen-progress" max="50" value="0"></progress>
+      <div id="treeProgressLabel" style="margin-top: 6px; color: #b9c7df; font-size: 0.9rem; text-align: center;">0 / 50 L</div>
+      <h2 class="rumen-title">Rumen</h2>
     </section>
 
     <section class="controls" aria-label="Simulator controls">
@@ -599,7 +625,9 @@
     const playerUpgradeLevels = {};
     let activeSkyTime = '';
     let chompFx = null; // {until, at, x, y}
-    let treeProgressBits = 0;
+    let treeProgressLiters = 0;
+    const RUMEN_MAX_LITERS = 50;
+    const RUMEN_GOLD_THRESHOLD_LITERS = 30;
     const GIRAFFE_X = 10;
     const GIRAFFE_W = giraffe[0].length;
     const TREE_INTERACT_RANGE_X = 18;
@@ -788,12 +816,13 @@
 
 
     function syncTreeProgressUi() {
-      if (treeProgress) treeProgress.value = treeProgressBits;
-      if (treeProgressLabel) treeProgressLabel.textContent = `${treeProgressBits} / 100 bits`;
+      if (treeProgress) treeProgress.value = treeProgressLiters;
+      if (treeProgressLabel) treeProgressLabel.textContent = `${treeProgressLiters} / ${RUMEN_MAX_LITERS} L`;
+      if (treeProgress) treeProgress.classList.toggle('gold', treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS);
     }
 
     function advanceTreeProgress() {
-      treeProgressBits = Math.min(100, treeProgressBits + 1);
+      treeProgressLiters = Math.min(RUMEN_MAX_LITERS, treeProgressLiters + 1);
       syncTreeProgressUi();
     }
 
