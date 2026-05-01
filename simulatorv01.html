@@ -18,12 +18,12 @@
     .wrap {
       width: min(980px, 100%);
       background: #1a2030;
-      border: 2px solid transparent;
+      border: 1px solid #2b3750;
       border-radius: 12px;
       padding: 18px;
       transition: border-color 120ms ease, box-shadow 120ms ease;
     }
-    .wrap.turbo-glow {
+    .stage.turbo-glow {
       animation: turboGoldFlash 420ms linear infinite;
     }
     @keyframes turboGoldFlash {
@@ -39,13 +39,14 @@
     }
     a { color: #8fc4ff; }
     .stage {
-      border: 1px solid #2b3750;
+      border: 2px solid transparent;
       border-radius: 10px;
       padding: 12px;
       background: #0f1624;
       display: grid;
       place-items: center;
       margin-bottom: 12px;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
     }
     canvas {
       image-rendering: pixelated;
@@ -138,7 +139,7 @@
       <a href="./index.html">← Back to sprite preview</a>
     </div>
 
-    <section class="stage">
+    <section id="sceneFrame" class="stage">
       <canvas id="scene" width="700" height="500"></canvas>
     </section>
     <section id="levelFrame" class="frame hidden" aria-label="Level up upgrades">
@@ -307,7 +308,7 @@
     ];
 
     const progressionConfig = window.PROGRESSION || {};
-    const wrap = document.querySelector('.wrap');
+    const sceneFrame = document.getElementById('sceneFrame');
     const scene = document.getElementById('scene');
     const ctx = scene.getContext('2d');
     const toggle = document.getElementById('toggle');
@@ -858,7 +859,7 @@
         else if (treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS) rumenHint.textContent = 'Click Rumen to activate Turbo';
         else rumenHint.textContent = 'Fill to 30L to activate Turbo';
       }
-      if (wrap) wrap.classList.toggle('turbo-glow', turboNow);
+      if (sceneFrame) sceneFrame.classList.toggle('turbo-glow', turboNow);
     }
 
     function advanceTreeProgress() {
