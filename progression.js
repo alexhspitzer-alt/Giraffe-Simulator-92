@@ -15,7 +15,16 @@
       name: 'Molar Master',
       effectText: 'Increase bite damage 30%',
       perLevel: 30,
-      unit: '%'
+      unit: '%',
+      maxLevel: 5
+    },
+    {
+      id: 'leg-day',
+      name: 'Leg Day',
+      effectText: 'Increase movement speed 5%',
+      perLevel: 5,
+      unit: '%',
+      maxLevel: 5
     },
     {
       id: 'crits-r-us',
@@ -36,7 +45,12 @@
   }
 
   function nextUpgradeCards(playerUpgradeLevels = {}) {
-    return UPGRADE_PATHS.map((path) => {
+    return UPGRADE_PATHS
+      .filter((path) => {
+        const currentLevel = playerUpgradeLevels[path.id] || 0;
+        return !path.maxLevel || currentLevel < path.maxLevel;
+      })
+      .map((path) => {
       const currentLevel = playerUpgradeLevels[path.id] || 0;
       const nextLevel = currentLevel + 1;
       const totalValue = path.perLevel * nextLevel;

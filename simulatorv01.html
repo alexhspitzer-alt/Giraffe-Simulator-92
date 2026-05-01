@@ -676,6 +676,10 @@
       const molarLevel = playerUpgradeLevels['molar-master'] || 0;
       return 6 * Math.pow(1.30, molarLevel);
     }
+    function movementSpeedPerFrame() {
+      const legDayLevel = playerUpgradeLevels['leg-day'] || 0;
+      return 0.2 * Math.pow(1.05, legDayLevel);
+    }
 
     function availableUpgrades() {
       return nextUpgradeCards(playerUpgradeLevels);
@@ -869,10 +873,11 @@
       scene.height = rows * scale;
       ctx.clearRect(0, 0, scene.width, scene.height);
 
+      const moveStep = movementSpeedPerFrame();
       if (playing && movementMode === 'right') {
-        treeOffset -= 0.2;
+        treeOffset -= moveStep;
       } else if (playing && movementMode === 'left') {
-        treeOffset += 0.2;
+        treeOffset += moveStep;
       }
 
       const tilePeriod = treeVariantsMirrored.full[0].length;
