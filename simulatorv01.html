@@ -974,6 +974,12 @@
         localX >= minX && localX <= maxX &&
         localY >= minY && localY <= maxY;
       if (!hitLeaf && !hitCanopyBounds) return;
+      const neckLevel = playerUpgradeLevels['long-horse'] || 0;
+      const neckRaiseTiles = neckLevel * 4;
+      const giraffeMouthY = 22 - neckRaiseTiles;
+      const canopyBottomY = effectiveTreeY + maxY;
+      const extraHeightRequired = tier === 3 ? 8 : 0; // level-3 canopy requires ~60cm (2 levels)
+      if (giraffeMouthY > canopyBottomY - extraHeightRequired) return;
       const treeTrunkX = treeX + Math.floor(currentTree[0].length / 2);
       const giraffeFrontX = GIRAFFE_X + GIRAFFE_W - 1;
       const giraffeBackX = GIRAFFE_X;
