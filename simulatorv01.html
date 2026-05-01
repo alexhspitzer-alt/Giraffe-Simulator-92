@@ -674,8 +674,7 @@
     }
     function baseBiteDamage() {
       const molarLevel = playerUpgradeLevels['molar-master'] || 0;
-      const damageScale = 1 + (molarLevel * 0.30);
-      return 5 * damageScale;
+      return 5 * Math.pow(1.30, molarLevel);
     }
 
     function availableUpgrades() {
