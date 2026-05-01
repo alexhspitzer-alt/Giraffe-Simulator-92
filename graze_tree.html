@@ -88,6 +88,13 @@
         <option value="dusk">Dusk</option>
         <option value="night">Night</option>
       </select>
+      <label for="neckBoost">Neck+</label>
+      <select id="neckBoost">
+        <option value="0" selected>0cm</option>
+        <option value="1">30cm</option>
+        <option value="2">60cm</option>
+        <option value="3">90cm</option>
+      </select>
       <button id="toggle">Pause</button>
       <button id="walkRight">Walk Right</button>
       <button id="walkLeft">Walk Left</button>
@@ -244,12 +251,66 @@
     const fpsInput = document.getElementById('fps');
     const treeStateInput = document.getElementById('treeState');
     const timeOfDayInput = document.getElementById('timeOfDay');
+    const neckBoostInput = document.getElementById('neckBoost');
     const toggle = document.getElementById('toggle');
     const walkRightBtn = document.getElementById('walkRight');
     const walkLeftBtn = document.getElementById('walkLeft');
 
     const clone = (m) => m.map((row) => [...row]);
     const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
+
+    function applyNeckBoost(matrix, neckLevel) {
+      // Neck boost pipeline:
+      // 1) Create extra vertical space.
+      // 2) Shift the base sprite downward into that space.
+      // 3) Move the head region upward.
+      // 4) Rebuild a continuous neck from head base to torso.
+      const extraRows = Math.max(0, neckLevel) * 4;
+      if (!extraRows) return { matrix, yAdjust: 0 };
+      const rows = matrix.length + extraRows;
+      const cols = matrix[0].length;
+      const m = Array.from({ length: rows }, () => Array(cols).fill(0));
+      const headTop = 0;
+      const headBottom = 8;
+      const neckBottom = 11;
+
+      // Place original sprite lower to create vertical room for a taller neck/head.
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < cols; c++) {
+          setPx(m, r + extraRows, c, matrix[r][c]);
+        }
+      }
+
+      // Clear old head+neck source area in the shifted sprite.
+      for (let r = headTop; r <= headBottom; r++) {
+        for (let c = 15; c < 23; c++) {
+          setPx(m, r + extraRows, c, 0);
+        }
+      }
+
+      // Reposition head at the top of the expanded matrix.
+      for (let r = headTop; r <= headBottom; r++) {
+        for (let c = 15; c < 23; c++) {
+          const v = matrix[r][c];
+          if (!v) continue;
+          setPx(m, r, c, v);
+        }
+      }
+
+      const neckStart = headBottom;
+      const neckEnd = neckBottom + extraRows;
+      const neckCols = [];
+      for (let c = 15; c < 23; c++) {
+        if (m[headBottom][c] !== 0) neckCols.push(c);
+      }
+      for (const col of neckCols) {
+        for (let r = neckStart; r <= neckEnd; r++) {
+          if (m[r][col] === 0) setPx(m, r, col, 1);
+        }
+      }
+
+      return { matrix: m, yAdjust: -extraRows };
+    }
 
     function makeWalkA() {
       const m = clone(giraffe);
@@ -628,6 +689,7 @@
       const frameTime = 1000 / fps;
       const moving = movementMode === 'right' || movementMode === 'left';
       const activeFrames = moving ? walkFrames : grazeFrames;
+      const neckLevel = Number(neckBoostInput.value) || 0;
       const baseStage = baseTreeStage();
 
       if (playing && ts - last >= frameTime) {
@@ -668,7 +730,8 @@
         }
       }
 
-      drawMatrixTransformed(activeFrames[frame], 10, 20, scale, palette.giraffe, movementMode === 'left');
+      const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
+      drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
 
       requestAnimationFrame(render);
     }

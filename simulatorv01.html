@@ -47,6 +47,46 @@
       background: linear-gradient(#0f1e3a, #14274b 66%, #3f6d39 66%, #3f6d39);
     }
     .controls { display: flex; gap: 60px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .frame {
+      border: 1px solid #2b3750;
+      border-radius: 10px;
+      background: #111827;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .frame h2 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+    .upgrades {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .upgrade-card {
+      border: 1px solid #3b4f73;
+      border-radius: 8px;
+      background: #0b1320;
+      color: #e7edf7;
+      padding: 10px;
+      min-width: 180px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .upgrade-card.selected {
+      border-color: #8fc4ff;
+      box-shadow: 0 0 0 1px #8fc4ff inset;
+    }
+    .upgrade-card .title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .upgrade-card .desc {
+      color: #b9c7df;
+      font-size: 0.9rem;
+    }
+    .hidden { display: none; }
     input, button {
       background: #101827;
       color: #e7edf7;
@@ -67,6 +107,11 @@
     <section class="stage">
       <canvas id="scene" width="700" height="500"></canvas>
     </section>
+    <section id="levelFrame" class="frame hidden" aria-label="Level up upgrades">
+      <h2 id="levelTitle">Level Up</h2>
+      <div id="upgradeCards" class="upgrades"></div>
+      <button id="continueBtn">Continue</button>
+    </section>
 
     <section class="controls" aria-label="Simulator controls">
       <button id="walkLeft">Left</button>
@@ -75,6 +120,7 @@
     </section>
   </main>
 
+  <script src="./progression.js"></script>
   <script>
     const giraffe = [
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],
@@ -219,11 +265,16 @@
       [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
     ];
 
+    const progressionConfig = window.PROGRESSION || {};
     const scene = document.getElementById('scene');
     const ctx = scene.getContext('2d');
     const toggle = document.getElementById('toggle');
     const walkRightBtn = document.getElementById('walkRight');
     const walkLeftBtn = document.getElementById('walkLeft');
+    const levelFrame = document.getElementById('levelFrame');
+    const levelTitle = document.getElementById('levelTitle');
+    const upgradeCards = document.getElementById('upgradeCards');
+    const continueBtn = document.getElementById('continueBtn');
 
     const SIM_SCALE = 5;
     const SIM_FPS = 4;
@@ -231,6 +282,39 @@
 
     const clone = (m) => m.map((row) => [...row]);
     const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
+    function applyNeckBoost(matrix, neckLevel) {
+      const extraRows = Math.max(0, neckLevel) * 4;
+      if (!extraRows) return { matrix, yAdjust: 0 };
+      const rows = matrix.length + extraRows;
+      const cols = matrix[0].length;
+      const m = Array.from({ length: rows }, () => Array(cols).fill(0));
+      const headTop = 0;
+      const headBottom = 8;
+      const neckBottom = 11;
+
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < cols; c++) setPx(m, r + extraRows, c, matrix[r][c]);
+      }
+      for (let r = headTop; r <= headBottom; r++) {
+        for (let c = 15; c < 23; c++) setPx(m, r + extraRows, c, 0);
+      }
+      for (let r = headTop; r <= headBottom; r++) {
+        for (let c = 15; c < 23; c++) {
+          const v = matrix[r][c];
+          if (v) setPx(m, r, c, v);
+        }
+      }
+      const neckStart = headBottom;
+      const neckEnd = neckBottom + extraRows;
+      const neckCols = [];
+      for (let c = 15; c < 23; c++) if (m[headBottom][c] !== 0) neckCols.push(c);
+      for (const col of neckCols) {
+        for (let r = neckStart; r <= neckEnd; r++) {
+          if (m[r][col] === 0) setPx(m, r, col, 1);
+        }
+      }
+      return { matrix: m, yAdjust: -extraRows };
+    }
 
     function makeWalkA() {
       const m = clone(giraffe);
@@ -498,7 +582,15 @@
     const treeRustleUntilById = new Map(); // k -> timestamp(ms) when rustle ends
     const pendingAdvanceById = new Map(); // k -> {at, nextStage, prevStage, tier}
     let xp = 0;
+    let level = 1;
+    let selectedUpgradeId = null;
+    let selectedUpgradePathId = null;
+    let levelUpPending = false;
+    const nextLevelXp = progressionConfig.nextLevelXp || ((lvl) => lvl * 100);
+    const nextUpgradeCards = progressionConfig.nextUpgradeCards || (() => []);
+    const playerUpgradeLevels = {};
     let activeSkyTime = '';
+    let chompFx = null; // {until, at, x, y}
     const GIRAFFE_X = 10;
     const GIRAFFE_W = giraffe[0].length;
     const TREE_INTERACT_RANGE_X = 18;
@@ -556,8 +648,87 @@
       ctx.font = '12px Inter, system-ui, sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'top';
-      ctx.fillText(`XP ${xp}`, scene.width - 10, 8);
+      ctx.fillText(`LVL ${level} | XP ${xp}/${nextLevelXp(level)}`, scene.width - 10, 8);
       ctx.restore();
+    }
+    function drawChompFx(ts) {
+      if (!chompFx || ts >= chompFx.until) {
+        chompFx = null;
+        return;
+      }
+      const elapsed = ts - chompFx.at;
+      const flashPhase = Math.floor(elapsed / 120) % 2 === 0;
+      ctx.save();
+      ctx.fillStyle = flashPhase ? '#111111' : '#D61C1C';
+      ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+      ctx.translate(chompFx.x, chompFx.y);
+      ctx.rotate(-Math.PI / 4);
+      ctx.fillText('CHOMP', 0, 0);
+      ctx.restore();
+    }
+    function maxHpForStage(stage) {
+      if (stage === 1) return 15; // stage 2 gets +5
+      if (stage === 2) return 15; // stage 3 gets +5
+      if (stage === 3) return 20; // stage 4 gets +10
+      return 10;
+    }
+    function baseBiteDamage() {
+      const molarLevel = playerUpgradeLevels['molar-master'] || 0;
+      return 6 * Math.pow(1.30, molarLevel);
+    }
+    function movementSpeedPerFrame() {
+      const legDayLevel = playerUpgradeLevels['leg-day'] || 0;
+      return 0.2 * Math.pow(1.05, legDayLevel);
+    }
+
+    function availableUpgrades() {
+      return nextUpgradeCards(playerUpgradeLevels);
+    }
+
+    function chooseUpgradeOptions() {
+      const pool = [...availableUpgrades()];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, 3);
+    }
+
+    function openLevelUpFrame() {
+      const options = chooseUpgradeOptions();
+      if (!options.length) return;
+      selectedUpgradeId = null;
+      selectedUpgradePathId = null;
+      levelUpPending = true;
+      playing = false;
+      toggle.textContent = 'Play';
+      levelTitle.textContent = `Level ${level + 1} Upgrade`;
+      upgradeCards.innerHTML = '';
+      for (const option of options) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'upgrade-card';
+        button.dataset.upgradeId = option.id;
+        button.innerHTML = `<div class="title">${option.title}</div><div class="desc">${option.desc}</div>`;
+        button.addEventListener('click', () => {
+          selectedUpgradeId = option.id;
+          selectedUpgradePathId = option.pathId;
+          for (const card of upgradeCards.querySelectorAll('.upgrade-card')) {
+            card.classList.toggle('selected', card.dataset.upgradeId === selectedUpgradeId);
+          }
+        });
+        upgradeCards.appendChild(button);
+      }
+      levelFrame.classList.remove('hidden');
+    }
+
+    function closeLevelUpFrame() {
+      levelFrame.classList.add('hidden');
+      levelUpPending = false;
+      selectedUpgradeId = null;
+      selectedUpgradePathId = null;
+      playing = true;
+      toggle.textContent = 'Pause';
     }
 
     function skyTimeFromSystemHour() {
@@ -681,12 +852,16 @@
 
       // Apply any delayed stage advancements after rustle completes.
       for (const [k, pending] of pendingAdvanceById.entries()) {
+        if (!playing) continue;
         if (ts < pending.at) continue;
         treeStageById.set(k, pending.nextStage);
         if (pending.nextStage === 4 && pending.prevStage < 4) {
           if (pending.tier === 1) xp += 10;
           else if (pending.tier === 2) xp += 50;
           else if (pending.tier === 3) xp += 500;
+          if (!levelUpPending && xp >= nextLevelXp(level)) {
+            openLevelUpFrame();
+          }
         }
         pendingAdvanceById.delete(k);
       }
@@ -698,10 +873,11 @@
       scene.height = rows * scale;
       ctx.clearRect(0, 0, scene.width, scene.height);
 
+      const moveStep = movementSpeedPerFrame();
       if (playing && movementMode === 'right') {
-        treeOffset -= 0.2;
+        treeOffset -= moveStep;
       } else if (playing && movementMode === 'left') {
-        treeOffset += 0.2;
+        treeOffset += moveStep;
       }
 
       const tilePeriod = treeVariantsMirrored.full[0].length;
@@ -726,7 +902,10 @@
       }
       drawXpHud();
 
-      drawMatrixTransformed(activeFrames[frame], 10, 20, scale, palette.giraffe, movementMode === 'left');
+      const neckLevel = playerUpgradeLevels['long-horse'] || 0;
+      const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
+      drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
+      drawChompFx(ts);
 
       requestAnimationFrame(render);
     }
@@ -751,6 +930,8 @@
     });
 
     scene.addEventListener('click', (event) => {
+      if (!playing) return;
+      if (levelUpPending) return;
       const scale = Math.max(1, Math.min(18, SIM_SCALE));
       const rect = scene.getBoundingClientRect();
       const xTile = (event.clientX - rect.left) / scale;
@@ -798,6 +979,11 @@
         localX >= minX && localX <= maxX &&
         localY >= minY && localY <= maxY;
       if (!hitLeaf && !hitCanopyBounds) return;
+      const neckLevel = playerUpgradeLevels['long-horse'] || 0;
+      const neckRaiseTiles = neckLevel * 4;
+      const giraffeMouthY = 22 - neckRaiseTiles;
+      const canopyBottomY = effectiveTreeY + maxY;
+      if (giraffeMouthY > canopyBottomY) return;
       const treeTrunkX = treeX + Math.floor(currentTree[0].length / 2);
       const giraffeFrontX = GIRAFFE_X + GIRAFFE_W - 1;
       const giraffeBackX = GIRAFFE_X;
@@ -806,8 +992,24 @@
       if (trunkDistance > TREE_INTERACT_RANGE_X) return;
 
       const hpKey = `${k}:${currentStage}`;
-      const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : 10;
-      const nextHp = currentHp - 5;
+      const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : maxHpForStage(currentStage);
+      const critLevel = playerUpgradeLevels['crits-r-us'] || 0;
+      const critChance = Math.max(0, critLevel * 0.02);
+      const critHit = Math.random() < critChance;
+      const damage = Math.ceil(baseBiteDamage() * (critHit ? 3 : 1));
+      const nextHp = currentHp - damage;
+      if (critHit) {
+        const neckLevel = playerUpgradeLevels['long-horse'] || 0;
+        const neckRaise = neckLevel * 4;
+        const headX = (GIRAFFE_X + 18) * scale;
+        const headY = (20 - neckRaise + 2) * scale;
+        chompFx = {
+          at: performance.now(),
+          until: performance.now() + 520,
+          x: headX + 4 * scale,
+          y: headY - 4 * scale
+        };
+      }
       const rustleUntil = performance.now() + RUSTLE_MS;
       treeRustleUntilById.set(k, rustleUntil);
       if (nextHp > 0) {
@@ -823,6 +1025,19 @@
         prevStage: currentStage,
         tier
       });
+    });
+
+    continueBtn.addEventListener('click', () => {
+      if (!selectedUpgradeId) return;
+      if (selectedUpgradePathId) {
+        const current = playerUpgradeLevels[selectedUpgradePathId] || 0;
+        playerUpgradeLevels[selectedUpgradePathId] = current + 1;
+      }
+      level += 1;
+      closeLevelUpFrame();
+      if (xp >= nextLevelXp(level)) {
+        openLevelUpFrame();
+      }
     });
 
     applySkyFromSystemTime();
