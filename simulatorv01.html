@@ -1100,7 +1100,10 @@
           lastChompFxAt = now;
         }
       }
-      const rustleUntil = performance.now() + RUSTLE_MS;
+      const turboActive = isTurboActive();
+      const rustleDurationMs = turboActive ? 0 : RUSTLE_MS;
+      const advanceDelayMs = turboActive ? 0 : ADVANCE_DELAY_AFTER_RUSTLE_MS;
+      const rustleUntil = performance.now() + rustleDurationMs;
       treeRustleUntilById.set(k, rustleUntil);
       if (nextHp > 0) {
         treeStageHpById.set(hpKey, nextHp);
@@ -1110,7 +1113,7 @@
       treeStageHpById.set(hpKey, 0);
       const nextStage = Math.min(4, currentStage + 1);
       pendingAdvanceById.set(k, {
-        at: rustleUntil + ADVANCE_DELAY_AFTER_RUSTLE_MS,
+        at: rustleUntil + advanceDelayMs,
         nextStage,
         prevStage: currentStage,
         tier
