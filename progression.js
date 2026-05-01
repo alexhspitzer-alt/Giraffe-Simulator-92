@@ -34,7 +34,15 @@
       perLevel: 2,
       unit: '%',
       maxLevel: 5
-    }
+    },
+    {
+      id: 'quad-stomachs',
+      name: 'Quad Stomachs',
+      effectText: 'Build rumen 25% faster',
+      perLevel: 25,
+      unit: '%',
+      maxLevel: 2
+    },
   ];
 
   function nextLevelXp(level) {

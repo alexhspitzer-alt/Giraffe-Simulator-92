@@ -639,6 +639,7 @@
     let activeSkyTime = '';
     let chompFx = null; // {until, at, x, y}
     let treeProgressLiters = 0;
+    let treeProgressBaseLiters = 0;
     const RUMEN_MAX_LITERS = 50;
     const RUMEN_GOLD_THRESHOLD_LITERS = 30;
     const TURBO_SPEED_MULTIPLIER = 2;
@@ -748,6 +749,7 @@
       const durationSeconds = Math.max(6, Math.min(10, Math.floor(litersAtActivation / 5)));
       turboUntil = performance.now() + durationSeconds * 1000;
       treeProgressLiters = 0;
+      treeProgressBaseLiters = 0;
       syncTreeProgressUi();
       return true;
     }
@@ -863,7 +865,10 @@
     }
 
     function advanceTreeProgress() {
-      treeProgressLiters = Math.min(RUMEN_MAX_LITERS, treeProgressLiters + 1);
+      treeProgressBaseLiters += 1;
+      const quadStomachsLevel = playerUpgradeLevels['quad-stomachs'] || 0;
+      const bonusLiters = Math.floor(treeProgressBaseLiters / 4) * quadStomachsLevel;
+      treeProgressLiters = Math.min(RUMEN_MAX_LITERS, treeProgressBaseLiters + bonusLiters);
       syncTreeProgressUi();
     }
 
