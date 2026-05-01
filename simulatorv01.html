@@ -590,6 +590,7 @@
     const nextUpgradeCards = progressionConfig.nextUpgradeCards || (() => []);
     const playerUpgradeLevels = {};
     let activeSkyTime = '';
+    let chompFx = null; // {until, at, x, y}
     const GIRAFFE_X = 10;
     const GIRAFFE_W = giraffe[0].length;
     const TREE_INTERACT_RANGE_X = 18;
@@ -648,6 +649,21 @@
       ctx.textAlign = 'right';
       ctx.textBaseline = 'top';
       ctx.fillText(`LVL ${level} | XP ${xp}/${nextLevelXp(level)}`, scene.width - 10, 8);
+      ctx.restore();
+    }
+    function drawChompFx(ts) {
+      if (!chompFx || ts >= chompFx.until) {
+        chompFx = null;
+        return;
+      }
+      const elapsed = ts - chompFx.at;
+      const flashPhase = Math.floor(elapsed / 45) % 2 === 0;
+      ctx.save();
+      ctx.fillStyle = flashPhase ? '#111111' : '#D61C1C';
+      ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+      ctx.translate(chompFx.x, chompFx.y);
+      ctx.rotate(-Math.PI / 4);
+      ctx.fillText('CHOMP', 0, 0);
       ctx.restore();
     }
     function maxHpForStage(stage) {
@@ -880,6 +896,7 @@
       const neckLevel = playerUpgradeLevels['long-horse'] || 0;
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
       drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
+      drawChompFx(ts);
 
       requestAnimationFrame(render);
     }
@@ -962,7 +979,23 @@
 
       const hpKey = `${k}:${currentStage}`;
       const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : maxHpForStage(currentStage);
-      const nextHp = currentHp - 5;
+      const critLevel = playerUpgradeLevels['crits-r-us'] || 0;
+      const critChance = Math.max(0, critLevel * 0.02);
+      const critHit = Math.random() < critChance;
+      const damage = critHit ? 15 : 5;
+      const nextHp = currentHp - damage;
+      if (critHit) {
+        const neckLevel = playerUpgradeLevels['long-horse'] || 0;
+        const neckRaise = neckLevel * 4;
+        const headX = (GIRAFFE_X + 18) * scale;
+        const headY = (20 - neckRaise + 2) * scale;
+        chompFx = {
+          at: performance.now(),
+          until: performance.now() + 240,
+          x: headX + 14 * scale,
+          y: headY - 14 * scale
+        };
+      }
       const rustleUntil = performance.now() + RUSTLE_MS;
       treeRustleUntilById.set(k, rustleUntil);
       if (nextHp > 0) {
