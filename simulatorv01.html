@@ -657,7 +657,7 @@
         return;
       }
       const elapsed = ts - chompFx.at;
-      const flashPhase = Math.floor(elapsed / 45) % 2 === 0;
+      const flashPhase = Math.floor(elapsed / 120) % 2 === 0;
       ctx.save();
       ctx.fillStyle = flashPhase ? '#111111' : '#D61C1C';
       ctx.font = 'bold 11px Inter, system-ui, sans-serif';
@@ -996,9 +996,9 @@
         const headY = (20 - neckRaise + 2) * scale;
         chompFx = {
           at: performance.now(),
-          until: performance.now() + 240,
-          x: headX + 14 * scale,
-          y: headY - 14 * scale
+          until: performance.now() + 520,
+          x: headX + 4 * scale,
+          y: headY - 4 * scale
         };
       }
       const rustleUntil = performance.now() + RUSTLE_MS;
