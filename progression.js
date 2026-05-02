@@ -36,6 +36,14 @@
       maxLevel: 5
     },
     {
+      id: 'use-ur-noodle',
+      name: 'Use Ur Noodle',
+      effectText: 'Gain 10% more XP from foraging',
+      perLevel: 10,
+      unit: '%',
+      maxLevel: 5
+    },
+    {
       id: 'quad-stomachs',
       name: 'Quad Stomachs',
       effectText: 'Build rumen 25% faster',

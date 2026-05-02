@@ -736,6 +736,11 @@
       return isTurboActive() ? baseSpeed * TURBO_SPEED_MULTIPLIER : baseSpeed;
     }
 
+    function foragingXpMultiplier() {
+      const noodleLevel = playerUpgradeLevels['use-ur-noodle'] || 0;
+      return Math.pow(1.10, noodleLevel);
+    }
+
     function isTurboActive(nowTs = performance.now()) {
       return nowTs < turboUntil;
     }
@@ -954,9 +959,10 @@
         treeStageById.set(k, pending.nextStage);
         if (pending.nextStage > pending.prevStage) advanceTreeProgress();
         if (pending.nextStage === 4 && pending.prevStage < 4) {
-          if (pending.tier === 1) xp += 10;
-          else if (pending.tier === 2) xp += 50;
-          else if (pending.tier === 3) xp += 500;
+          let baseForagingXp = 10;
+          if (pending.tier === 2) baseForagingXp = 50;
+          else if (pending.tier === 3) baseForagingXp = 500;
+          xp += Math.round(baseForagingXp * foragingXpMultiplier());
           if (!levelUpPending && xp >= nextLevelXp(level)) {
             openLevelUpFrame();
           }
