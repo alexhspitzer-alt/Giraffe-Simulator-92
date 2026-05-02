@@ -51,6 +51,24 @@
       unit: '%',
       maxLevel: 2
     },
+    {
+      id: 'bungulate',
+      name: 'Bungulate',
+      effectText: 'Ruminate bonus time doubled',
+      perLevel: 100,
+      unit: '%',
+      maxLevel: 1,
+      unlockWhen: (levels) => (levels['quad-stomachs'] || 0) >= 2 && (levels['leg-day'] || 0) >= 3
+    },
+    {
+      id: 'herbimore',
+      name: 'HerbiMore',
+      effectText: 'Diet no longer limited to trees',
+      perLevel: 100,
+      unit: '%',
+      maxLevel: 1,
+      unlockWhen: (levels) => (levels['quad-stomachs'] || 0) >= 2 && (levels['long-horse'] || 0) >= 3
+    },
   ];
 
   function nextLevelXp(level) {
@@ -66,7 +84,9 @@
     return UPGRADE_PATHS
       .filter((path) => {
         const currentLevel = playerUpgradeLevels[path.id] || 0;
-        return !path.maxLevel || currentLevel < path.maxLevel;
+        const passesLevelCap = !path.maxLevel || currentLevel < path.maxLevel;
+        const passesUnlock = !path.unlockWhen || path.unlockWhen(playerUpgradeLevels);
+        return passesLevelCap && passesUnlock;
       })
       .map((path) => {
       const currentLevel = playerUpgradeLevels[path.id] || 0;

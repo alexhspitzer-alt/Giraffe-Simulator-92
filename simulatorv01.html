@@ -749,7 +749,9 @@
       if (treeProgressLiters < RUMEN_GOLD_THRESHOLD_LITERS) return false;
       const litersAtActivation = treeProgressLiters;
       const durationSeconds = Math.max(6, Math.min(10, Math.floor(litersAtActivation / 5)));
-      turboUntil = performance.now() + durationSeconds * 1000;
+      const bungulateLevel = playerUpgradeLevels['bungulate'] || 0;
+      const turboDurationSeconds = durationSeconds * (bungulateLevel > 0 ? 2 : 1);
+      turboUntil = performance.now() + turboDurationSeconds * 1000;
       treeProgressLiters = 0;
       treeProgressBaseLiters = 0;
       syncTreeProgressUi();
