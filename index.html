@@ -106,6 +106,8 @@
         <option value="walk" selected>Walk</option>
         <option value="graze">Graze</option>
         <option value="tree">Tree Scene</option>
+        <option value="termite">Termite Mound</option>
+        <option value="shrub">Shrub</option>
       </select>
 
       <label for="scale">Scale</label>
@@ -214,10 +216,74 @@
       return m;
     }
 
+    const termiteVariants = [
+      [
+        [0,0,0,3,3,0,0,0],
+        [0,0,3,3,3,3,0,0],
+        [0,3,3,2,2,3,3,0],
+        [3,3,2,2,2,2,3,3],
+        [3,2,2,2,2,2,2,3],
+        [3,2,2,2,2,2,2,3],
+        [3,2,2,2,2,2,2,3],
+        [3,3,3,3,3,3,3,3]
+      ],
+      [
+        [0,0,0,3,3,0,0,0],
+        [0,0,3,3,3,3,0,0],
+        [0,3,3,2,2,3,3,0],
+        [3,3,2,2,2,2,3,3],
+        [3,2,2,4,4,2,2,3],
+        [3,2,2,2,2,2,2,3],
+        [3,2,2,2,2,2,2,3],
+        [3,3,3,3,3,3,3,3]
+      ],
+      [
+        [0,0,0,3,3,0,0,0],
+        [0,0,3,3,3,3,0,0],
+        [0,3,3,2,2,3,3,0],
+        [3,3,2,2,2,2,3,3],
+        [3,2,4,2,2,4,2,3],
+        [3,2,2,2,2,2,2,3],
+        [3,2,2,2,2,2,2,3],
+        [3,3,3,3,3,3,3,3]
+      ]
+    ];
+
+    const shrubVariants = [
+      [
+        [0,0,5,5,5,5,0,0],
+        [0,5,5,5,5,5,5,0],
+        [5,5,5,6,5,5,5,5],
+        [5,5,6,6,6,6,5,5],
+        [0,5,5,6,6,5,5,0],
+        [0,0,1,1,1,1,0,0]
+      ],
+      [
+        [0,5,5,5,5,5,5,0],
+        [5,5,5,6,6,5,5,5],
+        [5,5,6,6,6,6,5,5],
+        [5,5,5,6,6,5,5,5],
+        [0,5,5,5,5,5,5,0],
+        [0,0,1,1,1,1,0,0]
+      ],
+      [
+        [0,0,5,5,5,5,0,0],
+        [0,5,5,6,6,5,5,0],
+        [5,5,6,6,6,6,5,5],
+        [5,5,5,6,6,5,5,5],
+        [0,5,5,5,5,5,5,0],
+        [0,0,1,1,1,1,0,0]
+      ]
+    ];
+
+
+
     const animations = {
       idle: [base],
       walk: [makeWalkA(), makeWalkB()],
-      graze: [makeGraze(2, 1, 0), makeGraze(2, 1, 1)]
+      graze: [makeGraze(2, 1, 0), makeGraze(2, 1, 1)],
+      termite: termiteVariants,
+      shrub: shrubVariants
     };
 
     const treeFull = [
@@ -344,6 +410,8 @@
       1: '#6C4A2D',
       2: '#5A9E46'
     };
+    const termitePalette = {1: "#4e3322", 2: "#8b5b3a", 3: "#6e452e", 4: "#3a2519"};
+    const shrubPalette = {1: "#6b4b2a", 5: "#4f9f42", 6: "#3e7f35"};
     const treePaletteLevel2 = {
       1: '#6C4A2D',
       2: '#2E7628'
@@ -400,7 +468,7 @@
     let frameIdx = 0;
     let last = 0;
 
-    function drawFrame(frame, scale) {
+    function drawFrame(frame, scale, colors = palette) {
       const rows = frame.length;
       const cols = frame[0].length;
       canvas.width = cols * scale;
@@ -411,7 +479,7 @@
         for (let c = 0; c < cols; c++) {
           const v = frame[r][c];
           if (!v) continue;
-          ctx.fillStyle = palette[v] || '#ffffff';
+          ctx.fillStyle = colors[v] || '#ffffff';
           ctx.fillRect(c * scale, r * scale, scale, scale);
         }
       }
@@ -450,6 +518,7 @@
           ? treeLevel2
           : (treeVariantsMirrored[treeStateInput.value] || treeVariantsMirrored.full);
       const treeColors = treeTypeInput.value === 'level2' ? treePaletteLevel2 : treePalette;
+      const modeColors = mode === 'termite' ? termitePalette : (mode === 'shrub' ? shrubPalette : palette);
       const scale = Math.max(1, Math.min(24, Number(scaleInput.value) || 5));
       const fps = Math.max(1, Math.min(12, Number(fpsInput.value) || 4));
       const frameTime = 1000 / fps;
@@ -462,7 +531,7 @@
       if (mode === 'tree') {
         drawTreeScene(frames[frameIdx], scale, treeMatrix, treeColors);
       } else {
-        drawFrame(frames[frameIdx], scale);
+        drawFrame(frames[frameIdx], scale, modeColors);
       }
       meta.textContent = `Animation: ${mode} | Frame: ${frameIdx + 1}/${frames.length} | Scale: ${scale}x | FPS: ${fps}`;
       requestAnimationFrame(tick);
@@ -478,17 +547,19 @@
     });
 
     stepBtn.addEventListener('click', () => {
-      const frames = animSel.value === 'tree' ? animations.graze : animations[animSel.value];
+      const mode = animSel.value;
+      const frames = mode === 'tree' ? animations.graze : animations[mode];
       const treeMatrix =
         treeTypeInput.value === 'level2'
           ? treeLevel2
           : (treeVariantsMirrored[treeStateInput.value] || treeVariantsMirrored.full);
       const treeColors = treeTypeInput.value === 'level2' ? treePaletteLevel2 : treePalette;
+      const modeColors = mode === 'termite' ? termitePalette : (mode === 'shrub' ? shrubPalette : palette);
       frameIdx = (frameIdx + 1) % frames.length;
-      if (animSel.value === 'tree') {
+      if (mode === 'tree') {
         drawTreeScene(frames[frameIdx], Number(scaleInput.value) || 5, treeMatrix, treeColors);
       } else {
-        drawFrame(frames[frameIdx], Number(scaleInput.value) || 5);
+        drawFrame(frames[frameIdx], Number(scaleInput.value) || 5, modeColors);
       }
     });
 
