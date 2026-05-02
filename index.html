@@ -128,6 +128,12 @@
         <option value="level1" selected>Level 1</option>
         <option value="level2">Level 2</option>
       </select>
+      <label for="objectVariant">Object Variant</label>
+      <select id="objectVariant">
+        <option value="0" selected>Variant 1</option>
+        <option value="1">Variant 2</option>
+        <option value="2">Variant 3</option>
+      </select>
 
       <button id="toggle">Pause</button>
       <button id="step">Step Frame</button>
@@ -460,6 +466,7 @@
     const fpsInput = document.getElementById('fps');
     const treeStateInput = document.getElementById('treeState');
     const treeTypeInput = document.getElementById('treeType');
+    const objectVariantInput = document.getElementById('objectVariant');
     const toggleBtn = document.getElementById('toggle');
     const stepBtn = document.getElementById('step');
     const meta = document.getElementById('meta');
@@ -510,9 +517,23 @@
       drawLayer(giraffeFrame, 10, 12, palette);
     }
 
+
+    function selectedFramesForMode(mode) {
+      if (mode === 'termite') {
+        const idx = Math.max(0, Math.min(2, Number(objectVariantInput.value) || 0));
+        return [termiteVariants[idx]];
+      }
+      if (mode === 'shrub') {
+        const idx = Math.max(0, Math.min(2, Number(objectVariantInput.value) || 0));
+        return [shrubVariants[idx]];
+      }
+      if (mode === 'tree') return animations.graze;
+      return animations[mode];
+    }
+
     function tick(ts) {
       const mode = animSel.value;
-      const frames = mode === 'tree' ? animations.graze : animations[mode];
+      const frames = selectedFramesForMode(mode);
       const treeMatrix =
         treeTypeInput.value === 'level2'
           ? treeLevel2
@@ -540,6 +561,7 @@
     animSel.addEventListener('change', () => { frameIdx = 0; });
     scaleInput.addEventListener('change', () => { frameIdx = 0; });
     fpsInput.addEventListener('change', () => { frameIdx = 0; });
+    objectVariantInput.addEventListener('change', () => { frameIdx = 0; });
 
     toggleBtn.addEventListener('click', () => {
       playing = !playing;
@@ -548,7 +570,7 @@
 
     stepBtn.addEventListener('click', () => {
       const mode = animSel.value;
-      const frames = mode === 'tree' ? animations.graze : animations[mode];
+      const frames = selectedFramesForMode(mode);
       const treeMatrix =
         treeTypeInput.value === 'level2'
           ? treeLevel2
