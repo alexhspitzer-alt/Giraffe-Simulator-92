@@ -780,7 +780,7 @@
         }
         const worldX = slot * objectPeriod;
         const parallaxOffset = treeOffset * 1.12;
-        const x = Math.floor(worldX + parallaxOffset);
+        const x = worldX + parallaxOffset;
         const bottomY = rows - 2;
         const y = bottomY - matrix.length;
         drawMatrix(matrix, x, y, scale, colors);
