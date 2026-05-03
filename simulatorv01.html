@@ -416,6 +416,9 @@
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
     const treePaletteLevel3 = {1: '#6C4A2D', 2: '#2E8A35', 3: '#45A84A', 4: '#69BF63'};
     const cloudPalette = {1: 'rgba(232, 242, 255, 0.3)', 2: 'rgba(255, 255, 255, 0.22)'};
+    const termitePalette = {2: '#9C6237', 3: '#7A4826'};
+    const shrubPalette = {1: '#6A4A2A', 4: '#4F8A3A', 5: '#76B84F'};
+    const rockPalette = {6: '#8E8E92', 7: '#B1B1B5'};
     const skyByTime = {
       dawn: 'linear-gradient(#5f6fb3, #d68d79 66%, #486f42 66%, #486f42)',
       noon: 'linear-gradient(#2f78cf, #71b7f3 66%, #4c8447 66%, #4c8447)',
@@ -679,6 +682,63 @@
       [0,0,1,1,1,1,1,1,1,1,1,1,1,0],
       [0,0,0,0,1,1,1,1,1,1,0,0,0,0]
     ];
+    const termiteVariants = [
+      [
+        [0,3,3,0],
+        [0,2,2,0],
+        [2,2,2,2],
+        [2,2,2,2],
+        [2,2,2,2],
+        [3,3,3,3]
+      ],
+      [
+        [0,0,3,3,0,0],
+        [0,2,2,2,2,0],
+        [2,2,2,2,2,2],
+        [2,2,2,2,2,2],
+        [2,2,2,2,2,2],
+        [2,2,2,2,2,2],
+        [3,3,3,3,3,3]
+      ],
+      [
+        [0,0,3,3,3,0,0],
+        [0,2,2,2,2,2,0],
+        [2,2,2,2,2,2,2],
+        [2,2,2,2,2,2,2],
+        [2,2,2,2,2,2,2],
+        [2,2,2,2,2,2,2],
+        [2,2,2,2,2,2,2],
+        [3,3,3,3,3,3,3]
+      ]
+    ];
+    const shrubVariants = [
+      [
+        [0,4,4,4,0],
+        [4,4,5,4,4],
+        [0,4,4,4,0],
+        [0,1,1,1,0]
+      ],
+      [
+        [0,0,4,4,4,4,0,0],
+        [0,4,4,5,5,4,4,0],
+        [4,4,5,5,5,5,4,4],
+        [0,0,1,1,1,1,0,0]
+      ],
+      [
+        [0,4,4,4,4,4,4,0],
+        [4,4,5,5,5,5,4,4],
+        [4,5,5,5,5,5,5,4],
+        [0,4,4,4,4,4,4,0],
+        [0,1,1,1,1,1,1,0]
+      ]
+    ];
+    const rockStatic = [
+      [0,0,6,6,6,6,0,0],
+      [0,6,6,7,7,6,6,0],
+      [6,6,7,7,7,7,6,6],
+      [6,7,7,7,7,7,7,6],
+      [6,6,6,6,6,6,6,6]
+    ];
 
     function drawClouds(cols, scale) {
       const cloudTilePeriod = 90;
@@ -694,6 +754,37 @@
         drawMatrix(cloudSprite, baseCloudX + k * cloudTilePeriod, y, scale, cloudPalette);
       }
       ctx.restore();
+    }
+
+    function pseudoRandom01(seed) {
+      const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453123;
+      return x - Math.floor(x);
+    }
+
+    function drawForegroundObjects(cols, rows, scale) {
+      const objectPeriod = 44;
+      const slotStart = Math.floor((-treeOffset) / objectPeriod) - 2;
+      const slotCount = Math.ceil(cols / objectPeriod) + 5;
+      for (let i = 0; i < slotCount; i++) {
+        const slot = slotStart + i;
+        if (pseudoRandom01(slot + 17) > 0.34) continue;
+        const typeRoll = pseudoRandom01(slot + 43);
+        let matrix = rockStatic;
+        let colors = rockPalette;
+        if (typeRoll < 0.4) {
+          matrix = termiteVariants[Math.floor(pseudoRandom01(slot + 71) * termiteVariants.length) % termiteVariants.length];
+          colors = termitePalette;
+        } else if (typeRoll < 0.8) {
+          matrix = shrubVariants[Math.floor(pseudoRandom01(slot + 89) * shrubVariants.length) % shrubVariants.length];
+          colors = shrubPalette;
+        }
+        const worldX = slot * objectPeriod;
+        const parallaxOffset = treeOffset * 1.12;
+        const x = Math.floor(worldX + parallaxOffset);
+        const bottomY = rows - 2;
+        const y = bottomY - matrix.length;
+        drawMatrix(matrix, x, y, scale, colors);
+      }
     }
 
     function drawXpHud() {
@@ -1025,11 +1116,11 @@
           drawTreeWithRustle(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree, rustleX);
         }
       }
-      drawXpHud();
-
       const neckLevel = playerUpgradeLevels['long-horse'] || 0;
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
       drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
+      drawForegroundObjects(cols, rows, scale);
+      drawXpHud();
       drawChompFx(ts);
 
       requestAnimationFrame(render);
