@@ -630,8 +630,8 @@
     const pendingAdvanceById = new Map(); // k -> {at, nextStage, prevStage, tier}
     let xp = 0;
     let level = 1;
-    let selectedUpgradeId = null;
-    let selectedUpgradePathId = null;
+    let selectedUpgradeIds = [];
+    let selectedUpgradePathIds = [];
     let levelUpPending = false;
     const nextLevelXp = progressionConfig.nextLevelXp || ((lvl) => lvl * 100);
     const nextUpgradeCards = progressionConfig.nextUpgradeCards || (() => []);
@@ -758,6 +758,19 @@
       return true;
     }
 
+
+    function hasLamarckableEffort() {
+      return (playerUpgradeLevels['lamarckable-effort'] || 0) > 0;
+    }
+
+    function upgradeDrawCount() {
+      return hasLamarckableEffort() ? 5 : 3;
+    }
+
+    function upgradePickCount() {
+      return hasLamarckableEffort() ? 2 : 1;
+    }
+
     function availableUpgrades() {
       return nextUpgradeCards(playerUpgradeLevels);
     }
@@ -768,18 +781,18 @@
         const j = Math.floor(Math.random() * (i + 1));
         [pool[i], pool[j]] = [pool[j], pool[i]];
       }
-      return pool.slice(0, 3);
+      return pool.slice(0, upgradeDrawCount());
     }
 
     function openLevelUpFrame() {
       const options = chooseUpgradeOptions();
       if (!options.length) return;
-      selectedUpgradeId = null;
-      selectedUpgradePathId = null;
+      selectedUpgradeIds = [];
+      selectedUpgradePathIds = [];
       levelUpPending = true;
       playing = false;
       toggle.textContent = 'Play';
-      levelTitle.textContent = `Level ${level + 1} Upgrade`;
+      levelTitle.textContent = `Level ${level + 1} Upgrade (Choose ${upgradePickCount()})`;
       upgradeCards.innerHTML = '';
       for (const option of options) {
         const button = document.createElement('button');
@@ -788,10 +801,16 @@
         button.dataset.upgradeId = option.id;
         button.innerHTML = `<div class="title">${option.title}</div><div class="desc">${option.desc}</div>`;
         button.addEventListener('click', () => {
-          selectedUpgradeId = option.id;
-          selectedUpgradePathId = option.pathId;
+          const existingIndex = selectedUpgradeIds.indexOf(option.id);
+          if (existingIndex >= 0) {
+            selectedUpgradeIds.splice(existingIndex, 1);
+            selectedUpgradePathIds.splice(existingIndex, 1);
+          } else if (selectedUpgradeIds.length < upgradePickCount()) {
+            selectedUpgradeIds.push(option.id);
+            selectedUpgradePathIds.push(option.pathId);
+          }
           for (const card of upgradeCards.querySelectorAll('.upgrade-card')) {
-            card.classList.toggle('selected', card.dataset.upgradeId === selectedUpgradeId);
+            card.classList.toggle('selected', selectedUpgradeIds.includes(card.dataset.upgradeId));
           }
         });
         upgradeCards.appendChild(button);
@@ -802,8 +821,8 @@
     function closeLevelUpFrame() {
       levelFrame.classList.add('hidden');
       levelUpPending = false;
-      selectedUpgradeId = null;
-      selectedUpgradePathId = null;
+      selectedUpgradeIds = [];
+      selectedUpgradePathIds = [];
       playing = true;
       toggle.textContent = 'Pause';
     }
@@ -1150,10 +1169,11 @@
     });
 
     continueBtn.addEventListener('click', () => {
-      if (!selectedUpgradeId) return;
-      if (selectedUpgradePathId) {
-        const current = playerUpgradeLevels[selectedUpgradePathId] || 0;
-        playerUpgradeLevels[selectedUpgradePathId] = current + 1;
+      if (selectedUpgradePathIds.length !== upgradePickCount()) return;
+      for (const pathId of selectedUpgradePathIds) {
+        if (!pathId) continue;
+        const current = playerUpgradeLevels[pathId] || 0;
+        playerUpgradeLevels[pathId] = current + 1;
       }
       level += 1;
       closeLevelUpFrame();

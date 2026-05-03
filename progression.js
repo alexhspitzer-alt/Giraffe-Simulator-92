@@ -61,6 +61,15 @@
       unlockWhen: (levels) => (levels['quad-stomachs'] || 0) >= 2 && (levels['leg-day'] || 0) >= 3
     },
     {
+      id: 'lamarckable-effort',
+      name: 'Lamarckable Effort',
+      effectText: 'Level ups draw 5 cards and let you choose 2',
+      perLevel: 1,
+      unit: 'x',
+      maxLevel: 1,
+      unlockWhen: (levels) => (levels['use-ur-noodle'] || 0) >= 3 && (levels['leg-day'] || 0) >= 3
+    },
+    {
       id: 'herbimore',
       name: 'HerbiMore',
       effectText: 'Diet no longer limited to trees',
