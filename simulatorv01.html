@@ -742,7 +742,7 @@
 
     function drawClouds(cols, scale) {
       const cloudTilePeriod = 90;
-      const cloudOffset = treeOffset * 0.2; // subtle parallax: 1/5th tree speed
+      const cloudOffset = -treeOffset * 0.2; // subtle counter-parallax for distant clouds
       const cloudRows = [2, 5, 8];
       const wrappedOffset = ((cloudOffset % cloudTilePeriod) + cloudTilePeriod) % cloudTilePeriod;
       const baseCloudX = 8 - wrappedOffset;
