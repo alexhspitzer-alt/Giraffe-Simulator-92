@@ -152,7 +152,7 @@
       <progress id="treeProgress" class="rumen-progress" max="50" value="0"></progress>
       <div id="treeProgressLabel" style="margin-top: 6px; color: #b9c7df; font-size: 0.9rem; text-align: center;">0 / 50 L</div>
       <h2 class="rumen-title">Rumen</h2>
-      <div id="rumenHint" style="margin-top: 4px; color: #8fc4ff; font-size: 0.85rem; text-align: center;">Fill to 30L to activate Turbo</div>
+      <div id="rumenHint" style="margin-top: 4px; color: #8fc4ff; font-size: 0.85rem; text-align: center;">eat 30L to activate Ruminate</div>
     </section>
 
     <section class="controls" aria-label="Simulator controls">
@@ -973,7 +973,7 @@
       if (rumenHint) {
         if (turboNow) rumenHint.textContent = 'Turbo active';
         else if (treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS) rumenHint.textContent = 'Click Rumen to activate Turbo';
-        else rumenHint.textContent = 'Fill to 30L to activate Turbo';
+        else rumenHint.textContent = 'eat 30L to activate Ruminate';
       }
       if (sceneFrame) sceneFrame.classList.toggle('turbo-glow', turboNow);
     }
