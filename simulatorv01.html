@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Giraffe Grazing Tree Preview</title>
+  <title>Giraffe Simulator v01</title>
   <style>
     body {
       margin: 0;
@@ -21,6 +21,14 @@
       border: 1px solid #2b3750;
       border-radius: 12px;
       padding: 18px;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+    .stage.turbo-glow {
+      animation: turboGoldFlash 420ms linear infinite;
+    }
+    @keyframes turboGoldFlash {
+      0%, 100% { border-color: rgba(217, 174, 59, 0.2); box-shadow: 0 0 0 0 rgba(217, 174, 59, 0.0); }
+      50% { border-color: rgba(217, 174, 59, 0.95); box-shadow: 0 0 14px 2px rgba(217, 174, 59, 0.35); }
     }
     .top {
       display: flex;
@@ -31,13 +39,14 @@
     }
     a { color: #8fc4ff; }
     .stage {
-      border: 1px solid #2b3750;
+      border: 2px solid transparent;
       border-radius: 10px;
       padding: 12px;
       background: #0f1624;
       display: grid;
       place-items: center;
       margin-bottom: 12px;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
     }
     canvas {
       image-rendering: pixelated;
@@ -46,7 +55,73 @@
       border-radius: 8px;
       background: linear-gradient(#0f1e3a, #14274b 66%, #3f6d39 66%, #3f6d39);
     }
-    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .controls { display: flex; gap: 60px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .frame {
+      border: 1px solid #2b3750;
+      border-radius: 10px;
+      background: #111827;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .frame h2 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+    .upgrades {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .upgrade-card {
+      border: 1px solid #3b4f73;
+      border-radius: 8px;
+      background: #0b1320;
+      color: #e7edf7;
+      padding: 10px;
+      min-width: 180px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .upgrade-card.selected {
+      border-color: #8fc4ff;
+      box-shadow: 0 0 0 1px #8fc4ff inset;
+    }
+    .upgrade-card .title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .upgrade-card .desc {
+      color: #b9c7df;
+      font-size: 0.9rem;
+    }
+    .hidden { display: none; }
+    .rumen-progress {
+      width: 100%;
+      height: 18px;
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent;
+      border: 1px solid #3b4f73;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .rumen-progress::-webkit-progress-bar { background: transparent; }
+    .rumen-progress::-webkit-progress-value {
+      background: #4CAF50;
+      transition: background-color 180ms ease;
+    }
+    .rumen-progress::-moz-progress-bar {
+      background: #4CAF50;
+      transition: background-color 180ms ease;
+    }
+    .rumen-progress.gold::-webkit-progress-value { background: #D9AE3B; }
+    .rumen-progress.gold::-moz-progress-bar { background: #D9AE3B; }
+    .rumen-title {
+      margin: 8px 0 0;
+      text-align: center;
+    }
+
     input, button {
       background: #101827;
       color: #e7edf7;
@@ -60,47 +135,34 @@
 <body>
   <main class="wrap">
     <div class="top">
-      <h1>Giraffe Grazing on Acacia Tree</h1>
+      <h1>Giraffe Simulator v01</h1>
       <a href="./index.html">← Back to sprite preview</a>
     </div>
 
-    <section class="stage">
+    <section id="sceneFrame" class="stage">
       <canvas id="scene" width="700" height="500"></canvas>
     </section>
+    <section id="levelFrame" class="frame hidden" aria-label="Level up upgrades">
+      <h2 id="levelTitle">Level Up</h2>
+      <div id="upgradeCards" class="upgrades"></div>
+      <button id="continueBtn">Continue</button>
+    </section>
 
-    <section class="controls">
-      <label for="scale">Scale</label>
-      <input id="scale" type="number" min="1" max="18" value="5" />
-      <label for="fps">FPS</label>
-      <input id="fps" type="number" min="1" max="12" value="4" />
-      <label for="treeState">Tree</label>
-      <select id="treeState">
-        <option value="full" selected>100%</option>
-        <option value="grazed">75%</option>
-        <option value="half">50%</option>
-        <option value="quarter">25%</option>
-        <option value="depleted">0%</option>
-      </select>
-      <label for="timeOfDay">Time</label>
-      <select id="timeOfDay">
-        <option value="dawn">Dawn</option>
-        <option value="noon" selected>Noon</option>
-        <option value="dusk">Dusk</option>
-        <option value="night">Night</option>
-      </select>
-      <label for="neckBoost">Neck+</label>
-      <select id="neckBoost">
-        <option value="0" selected>0cm</option>
-        <option value="1">30cm</option>
-        <option value="2">60cm</option>
-        <option value="3">90cm</option>
-      </select>
+    <section id="rumenFrame" class="frame" aria-label="Rumen progression">
+      <progress id="treeProgress" class="rumen-progress" max="50" value="0"></progress>
+      <div id="treeProgressLabel" style="margin-top: 6px; color: #b9c7df; font-size: 0.9rem; text-align: center;">0 / 50 L</div>
+      <h2 class="rumen-title">Rumen</h2>
+      <div id="rumenHint" style="margin-top: 4px; color: #8fc4ff; font-size: 0.85rem; text-align: center;">eat 30L to activate Ruminate</div>
+    </section>
+
+    <section class="controls" aria-label="Simulator controls">
+      <button id="walkLeft">Left</button>
       <button id="toggle">Pause</button>
-      <button id="walkRight">Walk Right</button>
-      <button id="walkLeft">Walk Left</button>
+      <button id="walkRight">Right</button>
     </section>
   </main>
 
+  <script src="./progression.js"></script>
   <script>
     const giraffe = [
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],
@@ -245,26 +307,29 @@
       [0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
     ];
 
+    const progressionConfig = window.PROGRESSION || {};
+    const sceneFrame = document.getElementById('sceneFrame');
     const scene = document.getElementById('scene');
     const ctx = scene.getContext('2d');
-    const scaleInput = document.getElementById('scale');
-    const fpsInput = document.getElementById('fps');
-    const treeStateInput = document.getElementById('treeState');
-    const timeOfDayInput = document.getElementById('timeOfDay');
-    const neckBoostInput = document.getElementById('neckBoost');
     const toggle = document.getElementById('toggle');
     const walkRightBtn = document.getElementById('walkRight');
     const walkLeftBtn = document.getElementById('walkLeft');
+    const levelFrame = document.getElementById('levelFrame');
+    const levelTitle = document.getElementById('levelTitle');
+    const upgradeCards = document.getElementById('upgradeCards');
+    const continueBtn = document.getElementById('continueBtn');
+    const treeProgress = document.getElementById('treeProgress');
+    const treeProgressLabel = document.getElementById('treeProgressLabel');
+    const rumenFrame = document.getElementById('rumenFrame');
+    const rumenHint = document.getElementById('rumenHint');
+
+    const SIM_SCALE = 5;
+    const SIM_FPS = 4;
+    const SIM_TREE_STATE = 'full';
 
     const clone = (m) => m.map((row) => [...row]);
     const setPx = (m, r, c, v) => { if (m[r] && m[r][c] !== undefined) m[r][c] = v; };
-
     function applyNeckBoost(matrix, neckLevel) {
-      // Neck boost pipeline:
-      // 1) Create extra vertical space.
-      // 2) Shift the base sprite downward into that space.
-      // 3) Move the head region upward.
-      // 4) Rebuild a continuous neck from head base to torso.
       const extraRows = Math.max(0, neckLevel) * 4;
       if (!extraRows) return { matrix, yAdjust: 0 };
       const rows = matrix.length + extraRows;
@@ -274,41 +339,27 @@
       const headBottom = 8;
       const neckBottom = 11;
 
-      // Place original sprite lower to create vertical room for a taller neck/head.
       for (let r = 0; r < matrix.length; r++) {
-        for (let c = 0; c < cols; c++) {
-          setPx(m, r + extraRows, c, matrix[r][c]);
-        }
+        for (let c = 0; c < cols; c++) setPx(m, r + extraRows, c, matrix[r][c]);
       }
-
-      // Clear old head+neck source area in the shifted sprite.
       for (let r = headTop; r <= headBottom; r++) {
-        for (let c = 15; c < 23; c++) {
-          setPx(m, r + extraRows, c, 0);
-        }
+        for (let c = 15; c < 23; c++) setPx(m, r + extraRows, c, 0);
       }
-
-      // Reposition head at the top of the expanded matrix.
       for (let r = headTop; r <= headBottom; r++) {
         for (let c = 15; c < 23; c++) {
           const v = matrix[r][c];
-          if (!v) continue;
-          setPx(m, r, c, v);
+          if (v) setPx(m, r, c, v);
         }
       }
-
       const neckStart = headBottom;
       const neckEnd = neckBottom + extraRows;
       const neckCols = [];
-      for (let c = 15; c < 23; c++) {
-        if (m[headBottom][c] !== 0) neckCols.push(c);
-      }
+      for (let c = 15; c < 23; c++) if (m[headBottom][c] !== 0) neckCols.push(c);
       for (const col of neckCols) {
         for (let r = neckStart; r <= neckEnd; r++) {
           if (m[r][col] === 0) setPx(m, r, col, 1);
         }
       }
-
       return { matrix: m, yAdjust: -extraRows };
     }
 
@@ -365,6 +416,9 @@
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
     const treePaletteLevel3 = {1: '#6C4A2D', 2: '#2E8A35', 3: '#45A84A', 4: '#69BF63'};
     const cloudPalette = {1: 'rgba(232, 242, 255, 0.3)', 2: 'rgba(255, 255, 255, 0.22)'};
+    const termitePalette = {2: '#9C6237', 3: '#7A4826'};
+    const shrubPalette = {1: '#6A4A2A', 4: '#4F8A3A', 5: '#76B84F'};
+    const rockPalette = {6: '#8E8E92', 7: '#B1B1B5'};
     const skyByTime = {
       dawn: 'linear-gradient(#5f6fb3, #d68d79 66%, #486f42 66%, #486f42)',
       noon: 'linear-gradient(#2f78cf, #71b7f3 66%, #4c8447 66%, #4c8447)',
@@ -574,6 +628,34 @@
     let treeOffset = 0;
     let movementMode = 'graze'; // graze | right | left
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
+    const treeStageHpById = new Map(); // `${k}:${stage}` -> hp remaining
+    const treeRustleUntilById = new Map(); // k -> timestamp(ms) when rustle ends
+    const pendingAdvanceById = new Map(); // k -> {at, nextStage, prevStage, tier}
+    let xp = 0;
+    let level = 1;
+    let selectedUpgradeIds = [];
+    let selectedUpgradePathIds = [];
+    let levelUpPending = false;
+    const nextLevelXp = progressionConfig.nextLevelXp || ((lvl) => lvl * 100);
+    const nextUpgradeCards = progressionConfig.nextUpgradeCards || (() => []);
+    const playerUpgradeLevels = {};
+    let activeSkyTime = '';
+    let chompFx = null; // {until, at, x, y}
+    let treeProgressLiters = 0;
+    let treeProgressBaseLiters = 0;
+    const RUMEN_MAX_LITERS = 50;
+    const RUMEN_GOLD_THRESHOLD_LITERS = 30;
+    const TURBO_SPEED_MULTIPLIER = 2;
+    const TURBO_FPS = 10;
+    const TURBO_TREE_RANGE_X = 25;
+    let turboUntil = 0;
+    let turboWasActive = false;
+    let lastChompFxAt = 0;
+    const GIRAFFE_X = 10;
+    const GIRAFFE_W = giraffe[0].length;
+    const TREE_INTERACT_RANGE_X = 18;
+    const RUSTLE_MS = 220;
+    const ADVANCE_DELAY_AFTER_RUSTLE_MS = 100;
     const treeTierAtIndex = (k) => {
       const normalized = ((k % 6) + 6) % 6;
       if (normalized === 5) return 3;
@@ -600,31 +682,312 @@
       [0,0,1,1,1,1,1,1,1,1,1,1,1,0],
       [0,0,0,0,1,1,1,1,1,1,0,0,0,0]
     ];
+    const termiteVariants = [
+      [
+        [0,3,3,0],
+        [0,2,2,0],
+        [2,2,2,2],
+        [2,2,2,2],
+        [2,2,2,2],
+        [3,3,3,3]
+      ],
+      [
+        [0,0,3,3,0,0],
+        [0,2,2,2,2,0],
+        [2,2,2,2,2,2],
+        [2,2,2,2,2,2],
+        [2,2,2,2,2,2],
+        [2,2,2,2,2,2],
+        [3,3,3,3,3,3]
+      ],
+      [
+        [0,0,3,3,3,0,0],
+        [0,2,2,2,2,2,0],
+        [2,2,2,2,2,2,2],
+        [2,2,2,2,2,2,2],
+        [2,2,2,2,2,2,2],
+        [2,2,2,2,2,2,2],
+        [2,2,2,2,2,2,2],
+        [3,3,3,3,3,3,3]
+      ]
+    ];
+    const shrubVariants = [
+      [
+        [0,4,4,4,0],
+        [4,4,5,4,4],
+        [0,4,4,4,0],
+        [0,1,1,1,0]
+      ],
+      [
+        [0,0,4,4,4,4,0,0],
+        [0,4,4,5,5,4,4,0],
+        [4,4,5,5,5,5,4,4],
+        [0,0,1,1,1,1,0,0]
+      ],
+      [
+        [0,4,4,4,4,4,4,0],
+        [4,4,5,5,5,5,4,4],
+        [4,5,5,5,5,5,5,4],
+        [0,4,4,4,4,4,4,0],
+        [0,1,1,1,1,1,1,0]
+      ]
+    ];
+    const rockStatic = [
+      [0,0,6,6,6,6,0,0],
+      [0,6,6,7,7,6,6,0],
+      [6,6,7,7,7,7,6,6],
+      [6,7,7,7,7,7,7,6],
+      [6,6,6,6,6,6,6,6]
+    ];
 
     function drawClouds(cols, scale) {
       const cloudTilePeriod = 90;
-      const cloudOffset = treeOffset * 0.2; // subtle parallax: 1/5th tree speed
-      const baseCloudX = 8 + cloudOffset;
-      const kStart = Math.floor((-(cloudTilePeriod) - baseCloudX) / cloudTilePeriod);
-      const kEnd = Math.ceil((cols + cloudTilePeriod - baseCloudX) / cloudTilePeriod);
+      const cloudOffset = -treeOffset * 0.2; // subtle counter-parallax for distant clouds
       const cloudRows = [2, 5, 8];
+      const wrappedOffset = ((cloudOffset % cloudTilePeriod) + cloudTilePeriod) % cloudTilePeriod;
+      const baseCloudX = 8 - wrappedOffset;
 
       ctx.save();
       ctx.globalAlpha = 0.9;
-      for (let k = kStart; k <= kEnd; k++) {
-        if ((k % 3) === 1) continue; // more frequent clouds with light spacing variation
+      for (let k = -1; k <= Math.ceil(cols / cloudTilePeriod) + 2; k++) {
         const y = cloudRows[((k % cloudRows.length) + cloudRows.length) % cloudRows.length];
         drawMatrix(cloudSprite, baseCloudX + k * cloudTilePeriod, y, scale, cloudPalette);
       }
       ctx.restore();
     }
 
-    function applySkyForTimeOfDay() {
-      scene.style.background = skyByTime[timeOfDayInput.value] || skyByTime.noon;
+    function pseudoRandom01(seed) {
+      const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453123;
+      return x - Math.floor(x);
+    }
+
+    function drawForegroundObjects(cols, rows, scale) {
+      const objectPeriod = 44;
+      const slotStart = Math.floor((-treeOffset) / objectPeriod) - 2;
+      const slotCount = Math.ceil(cols / objectPeriod) + 5;
+      for (let i = 0; i < slotCount; i++) {
+        const slot = slotStart + i;
+        if (pseudoRandom01(slot + 17) > 0.34) continue;
+        const typeRoll = pseudoRandom01(slot + 43);
+        let matrix = rockStatic;
+        let colors = rockPalette;
+        if (typeRoll < 0.4) {
+          matrix = termiteVariants[Math.floor(pseudoRandom01(slot + 71) * termiteVariants.length) % termiteVariants.length];
+          colors = termitePalette;
+        } else if (typeRoll < 0.8) {
+          matrix = shrubVariants[Math.floor(pseudoRandom01(slot + 89) * shrubVariants.length) % shrubVariants.length];
+          colors = shrubPalette;
+        }
+        const worldX = slot * objectPeriod;
+        const parallaxOffset = treeOffset * 1.12;
+        const x = worldX + parallaxOffset;
+        const bottomY = rows - 2;
+        const y = bottomY - matrix.length;
+        drawMatrix(matrix, x, y, scale, colors);
+      }
+    }
+
+    function drawXpHud() {
+      ctx.save();
+      ctx.fillStyle = '#D9AE3B';
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`LVL ${level} | XP ${xp}/${nextLevelXp(level)}`, scene.width - 10, 8);
+      ctx.restore();
+    }
+    function drawChompFx(ts) {
+      if (!chompFx || ts >= chompFx.until) {
+        chompFx = null;
+        return;
+      }
+      const elapsed = ts - chompFx.at;
+      const flashPhase = Math.floor(elapsed / 120) % 2 === 0;
+      ctx.save();
+      ctx.fillStyle = flashPhase ? '#111111' : '#D61C1C';
+      ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+      ctx.translate(chompFx.x, chompFx.y);
+      ctx.rotate(-Math.PI / 4);
+      ctx.fillText('CHOMP', 0, 0);
+      ctx.restore();
+    }
+    function maxHpForStage(stage) {
+      if (stage === 1) return 15; // stage 2 gets +5
+      if (stage === 2) return 15; // stage 3 gets +5
+      if (stage === 3) return 20; // stage 4 gets +10
+      return 10;
+    }
+    function baseBiteDamage() {
+      const molarLevel = playerUpgradeLevels['molar-master'] || 0;
+      return 6 * Math.pow(1.30, molarLevel);
+    }
+    function movementSpeedPerFrame() {
+      const legDayLevel = playerUpgradeLevels['leg-day'] || 0;
+      const baseSpeed = 0.2 * Math.pow(1.05, legDayLevel);
+      return isTurboActive() ? baseSpeed * TURBO_SPEED_MULTIPLIER : baseSpeed;
+    }
+
+    function foragingXpMultiplier() {
+      const noodleLevel = playerUpgradeLevels['use-ur-noodle'] || 0;
+      return Math.pow(1.10, noodleLevel);
+    }
+
+    function isTurboActive(nowTs = performance.now()) {
+      return nowTs < turboUntil;
+    }
+
+    function activateTurbo() {
+      if (treeProgressLiters < RUMEN_GOLD_THRESHOLD_LITERS) return false;
+      const litersAtActivation = treeProgressLiters;
+      const durationSeconds = Math.max(6, Math.min(10, Math.floor(litersAtActivation / 5)));
+      const bungulateLevel = playerUpgradeLevels['bungulate'] || 0;
+      const turboDurationSeconds = durationSeconds * (bungulateLevel > 0 ? 2 : 1);
+      turboUntil = performance.now() + turboDurationSeconds * 1000;
+      treeProgressLiters = 0;
+      treeProgressBaseLiters = 0;
+      syncTreeProgressUi();
+      return true;
+    }
+
+
+    function hasLamarckableEffort() {
+      return (playerUpgradeLevels['lamarckable-effort'] || 0) > 0;
+    }
+
+    function upgradeDrawCount() {
+      return hasLamarckableEffort() ? 5 : 3;
+    }
+
+    function upgradePickCount() {
+      return hasLamarckableEffort() ? 2 : 1;
+    }
+
+    function availableUpgrades() {
+      return nextUpgradeCards(playerUpgradeLevels);
+    }
+
+    function chooseUpgradeOptions() {
+      const pool = [...availableUpgrades()];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, upgradeDrawCount());
+    }
+
+    function openLevelUpFrame() {
+      const options = chooseUpgradeOptions();
+      if (!options.length) return;
+      selectedUpgradeIds = [];
+      selectedUpgradePathIds = [];
+      levelUpPending = true;
+      playing = false;
+      toggle.textContent = 'Play';
+      levelTitle.textContent = `Level ${level + 1} Upgrade (Choose ${upgradePickCount()})`;
+      upgradeCards.innerHTML = '';
+      for (const option of options) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'upgrade-card';
+        button.dataset.upgradeId = option.id;
+        button.innerHTML = `<div class="title">${option.title}</div><div class="desc">${option.desc}</div>`;
+        button.addEventListener('click', () => {
+          const existingIndex = selectedUpgradeIds.indexOf(option.id);
+          if (existingIndex >= 0) {
+            selectedUpgradeIds.splice(existingIndex, 1);
+            selectedUpgradePathIds.splice(existingIndex, 1);
+          } else if (selectedUpgradeIds.length < upgradePickCount()) {
+            selectedUpgradeIds.push(option.id);
+            selectedUpgradePathIds.push(option.pathId);
+          }
+          for (const card of upgradeCards.querySelectorAll('.upgrade-card')) {
+            card.classList.toggle('selected', selectedUpgradeIds.includes(card.dataset.upgradeId));
+          }
+        });
+        upgradeCards.appendChild(button);
+      }
+      levelFrame.classList.remove('hidden');
+    }
+
+    function closeLevelUpFrame() {
+      levelFrame.classList.add('hidden');
+      levelUpPending = false;
+      selectedUpgradeIds = [];
+      selectedUpgradePathIds = [];
+      playing = true;
+      toggle.textContent = 'Pause';
+    }
+
+    function skyTimeFromSystemHour() {
+      const hour = new Date().getHours();
+      if (hour >= 4 && hour <= 9) return 'dawn';
+      if (hour >= 10 && hour <= 14) return 'noon';
+      if (hour >= 15 && hour <= 19) return 'dusk';
+      return 'night';
+    }
+
+    function applySkyFromSystemTime() {
+      const skyTime = skyTimeFromSystemHour();
+      if (skyTime === activeSkyTime) return;
+      activeSkyTime = skyTime;
+      scene.style.background = skyByTime[skyTime] || skyByTime.noon;
+    }
+
+    function rustleOffsetForTree(k, nowTs) {
+      const until = treeRustleUntilById.get(k);
+      if (!until || nowTs >= until) return 0;
+      const t = until - nowTs;
+      const phase = Math.floor(t / 40) % 5;
+      if (phase === 1) return 1;
+      if (phase === 3) return -1;
+      return 0;
+    }
+
+    function drawTreeWithRustle(matrix, xOff, yOff, scale, colors, rustleX) {
+      // Keep trunk/branches stable.
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+          if (matrix[r][c] !== 1) continue;
+          ctx.fillStyle = colors[1];
+          ctx.fillRect((xOff + c) * scale, (yOff + r) * scale, scale, scale);
+        }
+      }
+
+      // Rustle only canopy (leaf values 2+).
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+          const v = matrix[r][c];
+          if (v < 2) continue;
+          ctx.fillStyle = colors[v];
+          ctx.fillRect((xOff + rustleX + c) * scale, (yOff + r) * scale, scale, scale);
+        }
+      }
+    }
+
+
+    function syncTreeProgressUi() {
+      if (treeProgress) treeProgress.value = treeProgressLiters;
+      if (treeProgressLabel) treeProgressLabel.textContent = `${treeProgressLiters} / ${RUMEN_MAX_LITERS} L`;
+      if (treeProgress) treeProgress.classList.toggle('gold', treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS);
+      const turboNow = isTurboActive();
+      if (rumenHint) {
+        if (turboNow) rumenHint.textContent = 'Turbo active';
+        else if (treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS) rumenHint.textContent = 'Click Rumen to activate Turbo';
+        else rumenHint.textContent = 'eat 30L to activate Ruminate';
+      }
+      if (sceneFrame) sceneFrame.classList.toggle('turbo-glow', turboNow);
+    }
+
+    function advanceTreeProgress() {
+      treeProgressBaseLiters += 1;
+      const quadStomachsLevel = playerUpgradeLevels['quad-stomachs'] || 0;
+      const bonusLiters = Math.floor(treeProgressBaseLiters / 4) * quadStomachsLevel;
+      treeProgressLiters = Math.min(RUMEN_MAX_LITERS, treeProgressBaseLiters + bonusLiters);
+      syncTreeProgressUi();
     }
 
     function baseTreeStage() {
-      const state = treeStateInput.value;
+      const state = SIM_TREE_STATE;
       if (state === 'grazed') return 1;
       if (state === 'half') return 2;
       if (state === 'quarter') return 3;
@@ -684,17 +1047,39 @@
     }
 
     function render(ts) {
-      const scale = Math.max(1, Math.min(18, Number(scaleInput.value) || 5));
-      const fps = Math.max(1, Math.min(12, Number(fpsInput.value) || 4));
+      const scale = Math.max(1, Math.min(18, SIM_SCALE));
+      const fps = isTurboActive(ts) ? TURBO_FPS : Math.max(1, Math.min(12, SIM_FPS));
       const frameTime = 1000 / fps;
       const moving = movementMode === 'right' || movementMode === 'left';
       const activeFrames = moving ? walkFrames : grazeFrames;
-      const neckLevel = Number(neckBoostInput.value) || 0;
       const baseStage = baseTreeStage();
+      const turboActiveNow = isTurboActive(ts);
+      if (turboActiveNow !== turboWasActive) {
+        turboWasActive = turboActiveNow;
+        syncTreeProgressUi();
+      }
 
       if (playing && ts - last >= frameTime) {
         frame = (frame + 1) % activeFrames.length;
         last = ts;
+      }
+
+      // Apply any delayed stage advancements after rustle completes.
+      for (const [k, pending] of pendingAdvanceById.entries()) {
+        if (!playing) continue;
+        if (ts < pending.at) continue;
+        treeStageById.set(k, pending.nextStage);
+        if (pending.nextStage > pending.prevStage) advanceTreeProgress();
+        if (pending.nextStage === 4 && pending.prevStage < 4) {
+          let baseForagingXp = 10;
+          if (pending.tier === 2) baseForagingXp = 50;
+          else if (pending.tier === 3) baseForagingXp = 500;
+          xp += Math.round(baseForagingXp * foragingXpMultiplier());
+          if (!levelUpPending && xp >= nextLevelXp(level)) {
+            openLevelUpFrame();
+          }
+        }
+        pendingAdvanceById.delete(k);
       }
 
       const cols = 70;
@@ -704,10 +1089,11 @@
       scene.height = rows * scale;
       ctx.clearRect(0, 0, scene.width, scene.height);
 
+      const moveStep = movementSpeedPerFrame();
       if (playing && movementMode === 'right') {
-        treeOffset -= 0.2;
+        treeOffset -= moveStep;
       } else if (playing && movementMode === 'left') {
-        treeOffset += 0.2;
+        treeOffset += moveStep;
       }
 
       const tilePeriod = treeVariantsMirrored.full[0].length;
@@ -718,20 +1104,24 @@
       for (let k = kStart; k <= kEnd; k++) {
         const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
         const tier = treeTierAtIndex(k);
+        const rustleX = rustleOffsetForTree(k, ts);
         if (tier === 3) {
           const tree = treeLevel3ForStage(stage);
-          drawMatrix(tree, baseTreeX + k * tilePeriod - 4, treeY - 16, scale, treePaletteLevel3);
+          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod - 4, treeY - 16, scale, treePaletteLevel3, rustleX);
         } else if (tier === 2) {
           const tree = treeLevel2ForStage(stage);
-          drawMatrix(tree, baseTreeX + k * tilePeriod - 3, treeY - 10, scale, treePaletteLevel2);
+          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod - 3, treeY - 10, scale, treePaletteLevel2, rustleX);
         } else {
           const tree = treeForStage(stage);
-          drawMatrix(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree);
+          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree, rustleX);
         }
       }
-
+      const neckLevel = playerUpgradeLevels['long-horse'] || 0;
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
       drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
+      drawForegroundObjects(cols, rows, scale);
+      drawXpHud();
+      drawChompFx(ts);
 
       requestAnimationFrame(render);
     }
@@ -743,21 +1133,22 @@
 
     walkRightBtn.addEventListener('click', () => {
       movementMode = movementMode === 'right' ? 'graze' : 'right';
-      walkRightBtn.textContent = movementMode === 'right' ? 'Stop Right' : 'Walk Right';
-      walkLeftBtn.textContent = 'Walk Left';
+      walkRightBtn.textContent = movementMode === 'right' ? 'Stop' : 'Right';
+      walkLeftBtn.textContent = 'Left';
       frame = 0;
     });
 
     walkLeftBtn.addEventListener('click', () => {
       movementMode = movementMode === 'left' ? 'graze' : 'left';
-      walkLeftBtn.textContent = movementMode === 'left' ? 'Stop Left' : 'Walk Left';
-      walkRightBtn.textContent = 'Walk Right';
+      walkLeftBtn.textContent = movementMode === 'left' ? 'Stop' : 'Left';
+      walkRightBtn.textContent = 'Right';
       frame = 0;
     });
-    timeOfDayInput.addEventListener('change', applySkyForTimeOfDay);
 
     scene.addEventListener('click', (event) => {
-      const scale = Math.max(1, Math.min(18, Number(scaleInput.value) || 5));
+      if (!playing) return;
+      if (levelUpPending) return;
+      const scale = Math.max(1, Math.min(18, SIM_SCALE));
       const rect = scene.getBoundingClientRect();
       const xTile = (event.clientX - rect.left) / scale;
       const yTile = (event.clientY - rect.top) / scale;
@@ -804,12 +1195,86 @@
         localX >= minX && localX <= maxX &&
         localY >= minY && localY <= maxY;
       if (!hitLeaf && !hitCanopyBounds) return;
+      const neckLevel = playerUpgradeLevels['long-horse'] || 0;
+      const neckRaiseTiles = neckLevel * 4;
+      const giraffeMouthY = 22 - neckRaiseTiles;
+      const canopyBottomY = effectiveTreeY + maxY;
+      if (giraffeMouthY > canopyBottomY) return;
+      const treeTrunkX = treeX + Math.floor(currentTree[0].length / 2);
+      const giraffeFrontX = GIRAFFE_X + GIRAFFE_W - 1;
+      const giraffeBackX = GIRAFFE_X;
+      const giraffeMidX = Math.floor((giraffeFrontX + giraffeBackX) / 2);
+      const trunkDistance = Math.abs(treeTrunkX - giraffeMidX);
+      const treeInteractRange = isTurboActive() ? TURBO_TREE_RANGE_X : TREE_INTERACT_RANGE_X;
+      if (trunkDistance > treeInteractRange) return;
 
+      const hpKey = `${k}:${currentStage}`;
+      const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : maxHpForStage(currentStage);
+      const critLevel = playerUpgradeLevels['crits-r-us'] || 0;
+      const critChance = Math.max(0, critLevel * 0.02);
+      const turboCrit = isTurboActive();
+      const critHit = turboCrit || Math.random() < critChance;
+      const damage = Math.ceil(baseBiteDamage() * (critHit ? 3 : 1));
+      const nextHp = currentHp - damage;
+      if (critHit) {
+        const now = performance.now();
+        if (now - lastChompFxAt >= 500) {
+          const neckLevel = playerUpgradeLevels['long-horse'] || 0;
+          const neckRaise = neckLevel * 4;
+          const headX = (GIRAFFE_X + 18) * scale;
+          const headY = (20 - neckRaise + 2) * scale;
+          chompFx = {
+            at: now,
+            until: now + 520,
+            x: headX + 4 * scale,
+            y: headY - 4 * scale
+          };
+          lastChompFxAt = now;
+        }
+      }
+      const turboActive = isTurboActive();
+      const rustleDurationMs = RUSTLE_MS;
+      const advanceDelayMs = turboActive ? 0 : ADVANCE_DELAY_AFTER_RUSTLE_MS;
+      const rustleUntil = performance.now() + rustleDurationMs;
+      treeRustleUntilById.set(k, rustleUntil);
+      if (nextHp > 0) {
+        treeStageHpById.set(hpKey, nextHp);
+        return;
+      }
+
+      treeStageHpById.set(hpKey, 0);
       const nextStage = Math.min(4, currentStage + 1);
-      treeStageById.set(k, nextStage);
+      pendingAdvanceById.set(k, {
+        at: rustleUntil + advanceDelayMs,
+        nextStage,
+        prevStage: currentStage,
+        tier
+      });
     });
 
-    applySkyForTimeOfDay();
+
+    rumenFrame.addEventListener('click', () => {
+      if (!playing) return;
+      activateTurbo();
+      syncTreeProgressUi();
+    });
+
+    continueBtn.addEventListener('click', () => {
+      if (selectedUpgradePathIds.length !== upgradePickCount()) return;
+      for (const pathId of selectedUpgradePathIds) {
+        if (!pathId) continue;
+        const current = playerUpgradeLevels[pathId] || 0;
+        playerUpgradeLevels[pathId] = current + 1;
+      }
+      level += 1;
+      closeLevelUpFrame();
+      if (xp >= nextLevelXp(level)) {
+        openLevelUpFrame();
+      }
+    });
+
+    applySkyFromSystemTime();
+    syncTreeProgressUi();
     requestAnimationFrame(render);
   </script>
 </body>
