@@ -86,6 +86,30 @@
       font-size: 0.85rem;
       color: var(--muted);
     }
+    .gallery {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .tile {
+      background: #101722;
+      border: 1px solid #31405a;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .tile h3 {
+      margin: 0 0 8px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .tile canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -129,6 +153,11 @@
 
       <button id="toggle">Pause</button>
       <button id="step">Step Frame</button>
+    </section>
+
+    <section>
+      <p>All available sprite and graphic previews:</p>
+      <div class="gallery" id="gallery"></div>
     </section>
 
     <div class="meta" id="meta"></div>
@@ -395,6 +424,7 @@
     const toggleBtn = document.getElementById('toggle');
     const stepBtn = document.getElementById('step');
     const meta = document.getElementById('meta');
+    const gallery = document.getElementById('gallery');
 
     let playing = true;
     let frameIdx = 0;
@@ -440,6 +470,47 @@
         drawLayer(treeMatrix, x, 14, treeColors);
       }
       drawLayer(giraffeFrame, 10, 12, palette);
+    }
+
+
+    function renderToCanvas(frame, scale, colors) {
+      const preview = document.createElement('canvas');
+      preview.width = frame[0].length * scale;
+      preview.height = frame.length * scale;
+      const pctx = preview.getContext('2d');
+      for (let r = 0; r < frame.length; r++) {
+        for (let c = 0; c < frame[0].length; c++) {
+          const v = frame[r][c];
+          if (!v) continue;
+          pctx.fillStyle = colors[v] || '#fff';
+          pctx.fillRect(c * scale, r * scale, scale, scale);
+        }
+      }
+      return preview;
+    }
+
+    function addPreviewTile(label, frame, colors, scale = 3) {
+      const tile = document.createElement('article');
+      tile.className = 'tile';
+      const title = document.createElement('h3');
+      title.textContent = label;
+      tile.appendChild(title);
+      tile.appendChild(renderToCanvas(frame, scale, colors));
+      gallery.appendChild(tile);
+    }
+
+    function renderGallery() {
+      addPreviewTile('Idle', base, palette);
+      addPreviewTile('Walk A', animations.walk[0], palette);
+      addPreviewTile('Walk B', animations.walk[1], palette);
+      addPreviewTile('Graze A', animations.graze[0], palette);
+      addPreviewTile('Graze B', animations.graze[1], palette);
+      addPreviewTile('Tree L1 100%', treeVariantsMirrored.full, treePalette);
+      addPreviewTile('Tree L1 75%', treeVariantsMirrored.grazed, treePalette);
+      addPreviewTile('Tree L1 50%', treeVariantsMirrored.half, treePalette);
+      addPreviewTile('Tree L1 25%', treeVariantsMirrored.quarter, treePalette);
+      addPreviewTile('Tree L1 0%', treeVariantsMirrored.depleted, treePalette);
+      addPreviewTile('Tree L2', treeLevel2, treePaletteLevel2, 2);
     }
 
     function tick(ts) {
@@ -492,6 +563,7 @@
       }
     });
 
+    renderGallery();
     drawFrame(base, 5);
     requestAnimationFrame(tick);
   </script>
