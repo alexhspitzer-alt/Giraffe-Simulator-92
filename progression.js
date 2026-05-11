@@ -1,6 +1,6 @@
 (() => {
   const LEVEL_XP_BASE = 100;
-  const LEVEL_XP_GROWTH_FACTOR = 1.75;
+  const LEVEL_XP_GROWTH_FACTOR = 1.65;
 
   const UPGRADE_PATHS = [
     {
