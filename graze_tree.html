@@ -697,6 +697,16 @@
       if (stage >= 4) return treeLevel4VariantsMirrored.depleted;
       return treeLevel4VariantsMirrored.full;
     }
+    function drawLevel4TreeWithGroundedTrunk(matrix, xOff, yOff, scale, colors, groundY) {
+      drawMatrix(matrix, xOff, yOff, scale, colors);
+      const trunkCenter = xOff + Math.floor(matrix[0].length / 2);
+      const trunkBottom = yOff + matrix.length - 1;
+      for (let y = trunkBottom + 1; y <= groundY; y++) {
+        ctx.fillStyle = colors[1];
+        ctx.fillRect((trunkCenter - 1) * scale, y * scale, scale, scale);
+        ctx.fillRect(trunkCenter * scale, y * scale, scale, scale);
+      }
+    }
 
     function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, flipHorizontal = false) {
       const width = matrix[0].length * scale;
@@ -762,7 +772,7 @@
         const tier = treeTierAtIndex(k);
         if (tier === 4) {
           const tree = treeLevel4ForStage(stage);
-          drawMatrix(tree, baseTreeX + k * tilePeriod - 4, treeY - 22, scale, treePaletteLevel3);
+          drawLevel4TreeWithGroundedTrunk(tree, baseTreeX + k * tilePeriod - 4, treeY - 28, scale, treePaletteLevel3, treeY + 28);
         } else if (tier === 3) {
           const tree = treeLevel3ForStage(stage);
           drawMatrix(tree, baseTreeX + k * tilePeriod - 4, treeY - 16, scale, treePaletteLevel3);
@@ -813,7 +823,7 @@
       const k = Math.floor((xTile - baseTreeX) / tilePeriod);
       const tier = treeTierAtIndex(k);
       const treeX = baseTreeX + k * tilePeriod + (tier >= 3 ? -4 : tier === 2 ? -3 : 0);
-      const effectiveTreeY = treeY + (tier === 4 ? -22 : tier === 3 ? -16 : tier === 2 ? -10 : 0);
+      const effectiveTreeY = treeY + (tier === 4 ? -28 : tier === 3 ? -16 : tier === 2 ? -10 : 0);
       const localX = Math.floor(xTile - treeX);
       const localY = Math.floor(yTile - effectiveTreeY);
 
