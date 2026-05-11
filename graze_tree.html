@@ -544,6 +544,13 @@
     }
 
     const mirrorX = (matrix) => matrix.map((row) => [...row].reverse());
+    function trimTopEmptyRows(matrix) {
+      let firstNonEmpty = 0;
+      while (firstNonEmpty < matrix.length && matrix[firstNonEmpty].every((v) => v === 0)) {
+        firstNonEmpty += 1;
+      }
+      return firstNonEmpty > 0 ? matrix.slice(firstNonEmpty) : matrix;
+    }
     const treeVariantsMirrored = {
       full: mirrorX(treeFull),
       grazed: mirrorX(tree75),
@@ -595,11 +602,11 @@
       return out;
     }
     const treeLevel4VariantsMirrored = {
-      full: mirrorX(buildLevel4Stage(BAOBAB_30x30, 0)),
-      grazed: mirrorX(buildLevel4Stage(BAOBAB_30x30, 1)),
-      half: mirrorX(buildLevel4Stage(BAOBAB_30x30, 2)),
-      quarter: mirrorX(buildLevel4Stage(BAOBAB_30x30, 3)),
-      depleted: mirrorX(buildLevel4Stage(BAOBAB_30x30, 4))
+      full: trimTopEmptyRows(mirrorX(buildLevel4Stage(BAOBAB_30x30, 0))),
+      grazed: trimTopEmptyRows(mirrorX(buildLevel4Stage(BAOBAB_30x30, 1))),
+      half: trimTopEmptyRows(mirrorX(buildLevel4Stage(BAOBAB_30x30, 2))),
+      quarter: trimTopEmptyRows(mirrorX(buildLevel4Stage(BAOBAB_30x30, 3))),
+      depleted: trimTopEmptyRows(mirrorX(buildLevel4Stage(BAOBAB_30x30, 4)))
     };
 
     let playing = true;
