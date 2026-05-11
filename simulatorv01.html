@@ -411,6 +411,7 @@
 
     const palette = {
       giraffe: {1: '#E2B24A', 2: '#8A4E1F'},
+      giraffeWakanda: {1: '#111111', 2: '#C0C0C0'},
       tree: {1: '#6C4A2D', 2: '#5A9E46'}
     };
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
@@ -656,12 +657,22 @@
     const TREE_INTERACT_RANGE_X = 18;
     const RUSTLE_MS = 220;
     const ADVANCE_DELAY_AFTER_RUSTLE_MS = 100;
+    function slotSeed(k) {
+      const x = Math.sin((k + 1) * 12.9898) * 43758.5453;
+      return x - Math.floor(x);
+    }
+    function slotHasTree(k) {
+      return slotSeed(k + 301) >= 0.40;
+    }
     const treeTierAtIndex = (k) => {
-      const normalized = ((k % 6) + 6) % 6;
-      if (normalized === 5) return 3;
-      if (normalized === 3) return 2;
+      const roll = slotSeed(k + 911);
+      if (roll < 0.125) return 3;
+      if (roll < 0.375) return 2;
       return 1;
     };
+    function treeXOffsetAtIndex(k) {
+      return Math.floor((slotSeed(k + 1201) - 0.5) * 10);
+    }
 
     function drawMatrix(matrix, xOff, yOff, scale, colors) {
       for (let r = 0; r < matrix.length; r++) {
@@ -811,11 +822,23 @@
       ctx.fillText('CHOMP', 0, 0);
       ctx.restore();
     }
-    function maxHpForStage(stage) {
-      if (stage === 1) return 15; // stage 2 gets +5
-      if (stage === 2) return 15; // stage 3 gets +5
-      if (stage === 3) return 20; // stage 4 gets +10
-      return 10;
+    function maxHpForStage(stage, tier = 1) {
+      if (tier === 3) {
+        if (stage === 1) return 32;
+        if (stage === 2) return 32;
+        if (stage === 3) return 42;
+        return 22;
+      }
+      if (tier === 2) {
+        if (stage === 1) return 20;
+        if (stage === 2) return 20;
+        if (stage === 3) return 26;
+        return 14;
+      }
+      if (stage === 1) return 12;
+      if (stage === 2) return 12;
+      if (stage === 3) return 16;
+      return 8;
     }
     function baseBiteDamage() {
       const molarLevel = playerUpgradeLevels['molar-master'] || 0;
@@ -827,9 +850,37 @@
       return isTurboActive() ? baseSpeed * TURBO_SPEED_MULTIPLIER : baseSpeed;
     }
 
+    function wakandaForageverLevel() {
+      return playerUpgradeLevels['wakanda-foragever'] || 0;
+    }
+
+    function activeGiraffePalette() {
+      return wakandaForageverLevel() >= 1 ? palette.giraffeWakanda : palette.giraffe;
+    }
+
     function foragingXpMultiplier() {
       const noodleLevel = playerUpgradeLevels['use-ur-noodle'] || 0;
       return Math.pow(1.10, noodleLevel);
+    }
+
+    function treeTierBaseForagingXp(tier) {
+      if (tier === 2) return 42;
+      if (tier === 3) return 112;
+      return 14;
+    }
+
+    function loraxTaxStageXpPercents() {
+      const loraxLevel = playerUpgradeLevels['lorax-tax'] || 0;
+      if (loraxLevel >= 2) return { early: 0.80, final: 0.05 };
+      if (loraxLevel >= 1) return { early: 0.60, final: 0.15 };
+      return null;
+    }
+
+    function grantForagingXp(baseForagingXp) {
+      xp += Math.ceil(baseForagingXp * foragingXpMultiplier());
+      if (!levelUpPending && xp >= nextLevelXp(level)) {
+        openLevelUpFrame();
+      }
     }
 
     function isTurboActive(nowTs = performance.now()) {
@@ -1070,14 +1121,17 @@
         if (ts < pending.at) continue;
         treeStageById.set(k, pending.nextStage);
         if (pending.nextStage > pending.prevStage) advanceTreeProgress();
-        if (pending.nextStage === 4 && pending.prevStage < 4) {
-          let baseForagingXp = 10;
-          if (pending.tier === 2) baseForagingXp = 50;
-          else if (pending.tier === 3) baseForagingXp = 500;
-          xp += Math.round(baseForagingXp * foragingXpMultiplier());
-          if (!levelUpPending && xp >= nextLevelXp(level)) {
-            openLevelUpFrame();
+        const loraxTaxPercents = loraxTaxStageXpPercents();
+        const baseForagingXp = treeTierBaseForagingXp(pending.tier);
+        if (loraxTaxPercents) {
+          if (pending.nextStage >= 2 && pending.prevStage < 2) {
+            grantForagingXp(baseForagingXp * loraxTaxPercents.early);
           }
+          if (pending.nextStage === 4 && pending.prevStage < 4) {
+            grantForagingXp(baseForagingXp * loraxTaxPercents.final);
+          }
+        } else if (pending.nextStage === 4 && pending.prevStage < 4) {
+          grantForagingXp(baseForagingXp);
         }
         pendingAdvanceById.delete(k);
       }
@@ -1102,23 +1156,41 @@
       const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
       const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
       for (let k = kStart; k <= kEnd; k++) {
+        if (!slotHasTree(k)) continue;
         const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
         const tier = treeTierAtIndex(k);
         const rustleX = rustleOffsetForTree(k, ts);
+        const slotOffsetX = treeXOffsetAtIndex(k);
         if (tier === 3) {
           const tree = treeLevel3ForStage(stage);
-          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod - 4, treeY - 16, scale, treePaletteLevel3, rustleX);
+          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod + slotOffsetX - 4, treeY - 16, scale, treePaletteLevel3, rustleX);
         } else if (tier === 2) {
           const tree = treeLevel2ForStage(stage);
-          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod - 3, treeY - 10, scale, treePaletteLevel2, rustleX);
+          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod + slotOffsetX - 3, treeY - 10, scale, treePaletteLevel2, rustleX);
         } else {
           const tree = treeForStage(stage);
-          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree, rustleX);
+          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod + slotOffsetX, treeY, scale, palette.tree, rustleX);
         }
       }
       const neckLevel = playerUpgradeLevels['long-horse'] || 0;
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
-      drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
+      const giraffeY = 20 + neckAdjusted.yAdjust;
+      if (wakandaForageverLevel() >= 2) {
+        const glowX = (10 + Math.floor(GIRAFFE_W / 2)) * scale;
+        const glowY = (giraffeY + Math.floor(neckAdjusted.matrix.length / 2)) * scale;
+        const glowRadius = Math.max(12, Math.floor(scale * 10));
+        const glow = ctx.createRadialGradient(glowX, glowY, Math.floor(glowRadius * 0.2), glowX, glowY, glowRadius);
+        glow.addColorStop(0, 'rgba(173, 99, 255, 0.40)');
+        glow.addColorStop(1, 'rgba(173, 99, 255, 0)');
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(glowX, glowY, glowRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      drawMatrixTransformed(neckAdjusted.matrix, 10, giraffeY, scale, activeGiraffePalette(), movementMode === 'left');
       drawForegroundObjects(cols, rows, scale);
       drawXpHud();
       drawChompFx(ts);
@@ -1156,21 +1228,29 @@
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
       const treeY = 24;
-      const k = Math.floor((xTile - baseTreeX) / tilePeriod);
-      const tier = treeTierAtIndex(k);
-      const treeX = baseTreeX + k * tilePeriod + (tier === 3 ? -4 : tier === 2 ? -3 : 0);
-      const effectiveTreeY = treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
-      const localX = Math.floor(xTile - treeX);
-      const localY = Math.floor(yTile - effectiveTreeY);
-
       const baseStage = baseTreeStage();
-      const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
-      const currentTree =
-        tier === 3 ? treeLevel3ForStage(currentStage) :
-        tier === 2 ? treeLevel2ForStage(currentStage) :
-        treeForStage(currentStage);
-
-      if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) return;
+      const kCenter = Math.floor((xTile - baseTreeX) / tilePeriod);
+      let target = null;
+      for (let dk = -2; dk <= 2; dk++) {
+        const k = kCenter + dk;
+        if (!slotHasTree(k)) continue;
+        const tier = treeTierAtIndex(k);
+        const slotOffsetX = treeXOffsetAtIndex(k);
+        const treeX = baseTreeX + k * tilePeriod + slotOffsetX + (tier === 3 ? -4 : tier === 2 ? -3 : 0);
+        const effectiveTreeY = treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
+        const localX = Math.floor(xTile - treeX);
+        const localY = Math.floor(yTile - effectiveTreeY);
+        const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
+        const currentTree =
+          tier === 3 ? treeLevel3ForStage(currentStage) :
+          tier === 2 ? treeLevel2ForStage(currentStage) :
+          treeForStage(currentStage);
+        if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) continue;
+        target = { k, tier, treeX, effectiveTreeY, localX, localY, currentStage, currentTree };
+        break;
+      }
+      if (!target) return;
+      const { k, tier, treeX, effectiveTreeY, localX, localY, currentStage, currentTree } = target;
 
       // Green foliage tiles are primary click targets.
       // For sparse stages, allow clicks anywhere inside the remaining canopy bounds.
@@ -1205,11 +1285,12 @@
       const giraffeBackX = GIRAFFE_X;
       const giraffeMidX = Math.floor((giraffeFrontX + giraffeBackX) / 2);
       const trunkDistance = Math.abs(treeTrunkX - giraffeMidX);
-      const treeInteractRange = isTurboActive() ? TURBO_TREE_RANGE_X : TREE_INTERACT_RANGE_X;
+      const wakandaRangeMultiplier = wakandaForageverLevel() >= 2 ? 2 : 1;
+      const treeInteractRange = (isTurboActive() ? TURBO_TREE_RANGE_X : TREE_INTERACT_RANGE_X) * wakandaRangeMultiplier;
       if (trunkDistance > treeInteractRange) return;
 
       const hpKey = `${k}:${currentStage}`;
-      const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : maxHpForStage(currentStage);
+      const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : maxHpForStage(currentStage, tier);
       const critLevel = playerUpgradeLevels['crits-r-us'] || 0;
       const critChance = Math.max(0, critLevel * 0.02);
       const turboCrit = isTurboActive();
