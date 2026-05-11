@@ -567,6 +567,40 @@
       quarter: mirrorX(buildLevel3Stage(level3Base, 3)),
       depleted: mirrorX(buildLevel3Stage(level3Base, 4))
     };
+    const BAOBAB_30x30 = [
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0],[0,0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0],[0,0,0,0,0,2,2,2,2,2,2,2,0,0,0,0,0,0,2,2,2,2,2,2,2,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,1,2,2,2,0,0,0,0,2,2,2,1,2,2,2,2,2,0,0,0,0],[0,0,0,2,2,2,2,2,1,1,1,2,2,2,0,0,2,2,2,1,1,1,2,2,2,2,2,0,0,0],[0,0,0,2,2,2,2,1,1,1,1,1,2,2,2,2,2,2,1,1,1,1,1,2,2,2,2,0,0,0],
+      [0,0,0,0,2,2,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,2,2,0,0,0,0],[0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],[0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0]
+    ];
+    function buildLevel4Stage(level4Base, stageIndex) {
+      const out = cloneMatrix(level4Base);
+      if (stageIndex <= 0) return out;
+      for (let r = 0; r < out.length; r++) {
+        for (let c = 0; c < out[0].length; c++) {
+          if (!isLeafValue(out[r][c])) continue;
+          if (stageIndex >= 1 && c > 20) out[r][c] = 0;
+          else if (stageIndex >= 2 && c > 17) out[r][c] = 0;
+          else if (stageIndex >= 3 && c > 14) out[r][c] = 0;
+          else if (stageIndex >= 4) out[r][c] = 0;
+        }
+      }
+      return out;
+    }
+    const treeLevel4VariantsMirrored = {
+      full: mirrorX(buildLevel4Stage(BAOBAB_30x30, 0)),
+      grazed: mirrorX(buildLevel4Stage(BAOBAB_30x30, 1)),
+      half: mirrorX(buildLevel4Stage(BAOBAB_30x30, 2)),
+      quarter: mirrorX(buildLevel4Stage(BAOBAB_30x30, 3)),
+      depleted: mirrorX(buildLevel4Stage(BAOBAB_30x30, 4))
+    };
 
     let playing = true;
     let frame = 0;
@@ -576,7 +610,8 @@
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
     const treeTierAtIndex = (k) => {
       const normalized = ((k % 6) + 6) % 6;
-      if (normalized === 5) return 3;
+      if (normalized === 5) return 4;
+      if (normalized === 4) return 3;
       if (normalized === 3) return 2;
       return 1;
     };
@@ -655,6 +690,13 @@
       if (stage >= 4) return treeLevel3VariantsMirrored.depleted;
       return treeLevel3VariantsMirrored.full;
     }
+    function treeLevel4ForStage(stage) {
+      if (stage === 1) return treeLevel4VariantsMirrored.grazed;
+      if (stage === 2) return treeLevel4VariantsMirrored.half;
+      if (stage === 3) return treeLevel4VariantsMirrored.quarter;
+      if (stage >= 4) return treeLevel4VariantsMirrored.depleted;
+      return treeLevel4VariantsMirrored.full;
+    }
 
     function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, flipHorizontal = false) {
       const width = matrix[0].length * scale;
@@ -718,7 +760,10 @@
       for (let k = kStart; k <= kEnd; k++) {
         const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
         const tier = treeTierAtIndex(k);
-        if (tier === 3) {
+        if (tier === 4) {
+          const tree = treeLevel4ForStage(stage);
+          drawMatrix(tree, baseTreeX + k * tilePeriod - 4, treeY - 22, scale, treePaletteLevel3);
+        } else if (tier === 3) {
           const tree = treeLevel3ForStage(stage);
           drawMatrix(tree, baseTreeX + k * tilePeriod - 4, treeY - 16, scale, treePaletteLevel3);
         } else if (tier === 2) {
@@ -767,17 +812,20 @@
       const treeY = 24;
       const k = Math.floor((xTile - baseTreeX) / tilePeriod);
       const tier = treeTierAtIndex(k);
-      const treeX = baseTreeX + k * tilePeriod + (tier === 3 ? -4 : tier === 2 ? -3 : 0);
-      const effectiveTreeY = treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
+      const treeX = baseTreeX + k * tilePeriod + (tier >= 3 ? -4 : tier === 2 ? -3 : 0);
+      const effectiveTreeY = treeY + (tier === 4 ? -22 : tier === 3 ? -16 : tier === 2 ? -10 : 0);
       const localX = Math.floor(xTile - treeX);
       const localY = Math.floor(yTile - effectiveTreeY);
 
       const baseStage = baseTreeStage();
       const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
       const currentTree =
+        tier === 4 ? treeLevel4ForStage(currentStage) :
         tier === 3 ? treeLevel3ForStage(currentStage) :
         tier === 2 ? treeLevel2ForStage(currentStage) :
         treeForStage(currentStage);
+      const neckLevel = Number(neckBoostInput.value) || 0;
+      if (tier === 4 && neckLevel < 3) return;
 
       if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) return;
 
