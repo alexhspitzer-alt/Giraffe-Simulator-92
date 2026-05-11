@@ -13,6 +13,8 @@ flowchart TD
 
   WF[Wakanda Foragever I-II]
   LT[Lorax Tax I-II]
+  CS[CUD STORM I-II]
+  BR[Bless the Rains I]
   BG[Bungulate I]
   LE[Lamarckable Effort I]
   HM[HerbiMore I]
@@ -32,6 +34,12 @@ flowchart TD
   MM --> LT
   CR --> LT
 
+  QS --> CS
+  CR --> CS
+
+  MM --> BR
+  UN --> BR
+
   QS --> BG
   LD --> BG
 
@@ -46,6 +54,8 @@ flowchart TD
 
 - **Wakanda Foragever**: `Leg Day I` + `Crits R Us I` + `Long Horse I` + `Use Ur Noodle I`
 - **Lorax Tax**: `Molar Master III` + `Crits R Us III`
+- **CUD STORM**: `Quad Stomachs II` + `Crits R Us III`
+- **Bless the Rains**: `Molar Master III` + `Use Ur Noodle III`
 - **Bungulate**: `Quad Stomachs II` + `Leg Day III`
 - **Lamarckable Effort**: `Use Ur Noodle III` + `Leg Day III`
 - **HerbiMore**: `Quad Stomachs II` + `Long Horse III`
