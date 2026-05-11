@@ -1307,6 +1307,7 @@
       const baseStage = baseTreeStage();
       const kCenter = Math.floor((xTile - baseTreeX) / tilePeriod);
       let target = null;
+      let bestDistance = Infinity;
       for (let dk = -2; dk <= 2; dk++) {
         const k = kCenter + dk;
         if (!slotHasTree(k)) continue;
@@ -1322,8 +1323,15 @@
           tier === 2 ? treeLevel2ForStage(currentStage) :
           treeForStage(currentStage);
         if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) continue;
-        target = { k, tier, treeX, effectiveTreeY, localX, localY, currentStage, currentTree };
-        break;
+        const treeCenterX = treeX + currentTree[0].length / 2;
+        const treeCenterY = effectiveTreeY + currentTree.length / 2;
+        const dx = xTile - treeCenterX;
+        const dy = yTile - treeCenterY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          target = { k, tier, treeX, effectiveTreeY, localX, localY, currentStage, currentTree };
+        }
       }
       if (!target) return;
       const { k, tier, treeX, effectiveTreeY, localX, localY, currentStage, currentTree } = target;
