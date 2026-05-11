@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Savanna Sprite Preview</title>
+  <style>
+    :root { --bg:#111318; --panel:#1a1f29; --text:#e9edf5; --muted:#9aa7bd; --accent:#67b3ff; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,sans-serif; display:grid; place-items:center; min-height:100vh; padding:20px; }
+    .wrap { width:min(980px,100%); background:var(--panel); border:1px solid #2a3242; border-radius:12px; padding:18px; }
+    .stage { background:#0f131b; border:1px solid #263044; border-radius:10px; padding:16px; display:grid; place-items:center; margin:12px 0; }
+    canvas { image-rendering:pixelated; background:#0f1520; border:1px solid #2c3952; border-radius:8px; }
+    .controls, .legend { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    select, input { background:#101722; color:var(--text); border:1px solid #31405a; border-radius:8px; padding:8px 10px; }
+    .chip { border:1px solid #31405a; border-radius:999px; padding:4px 10px; color:var(--muted); font-size:.85rem; }
+    p { color:var(--muted); margin:0; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Savanna Elements Sprite Preview (30×30)</h1>
+    <p>Each sprite uses a 30×30 letter matrix. Select a sprite to preview.</p>
+    <section class="stage">
+      <canvas id="sprite" width="420" height="420"></canvas>
+    </section>
+    <section class="controls">
+      <label for="spriteSelect">Sprite</label>
+      <select id="spriteSelect"></select>
+      <label for="scale">Scale</label>
+      <input id="scale" type="number" min="4" max="20" value="14" />
+    </section>
+    <section class="legend" id="legend"></section>
+  </main>
+
+<script>
+const W = 30, H = 30;
+const blank = () => Array.from({length:H}, () => Array.from({length:W}, () => '.'));
+const paint = (m, r0, c0, shape, ch) => {
+  shape.forEach((row, r) => [...row].forEach((px, c) => { if (px === '#') m[r0+r][c0+c] = ch; }));
+};
+
+const sprites = {
+  'Watering Hole': { letter:'W', color:'#4aa3ff', make(){ const m=blank();
+    paint(m,8,5,['..######..','##########','##########','.########.'], 'W');
+    paint(m,10,7,['######','######'], 'w'); return m; }},
+  'Jeep': { letter:'J', color:'#d6b04e', make(){ const m=blank();
+    paint(m,13,5,['.######.','########','##.##.##','########'], 'J');
+    paint(m,12,7,['####'], 'j'); return m; }},
+  'Zebra': { letter:'Z', color:'#f0f0f0', make(){ const m=blank();
+    paint(m,11,6,['.######.','########','##.##.##','########','##....##'], 'Z'); return m; }},
+  'Baobab Tree': { letter:'B', color:'#9e6f44', make(){ const m=blank();
+    paint(m,6,10,['..####..','.######.','########','########','.######.'], 'b');
+    paint(m,11,13,['##','##','##','##','##','##','##'], 'B'); return m; }},
+  'Clump of Grass': { letter:'G', color:'#63c15a', make(){ const m=blank();
+    paint(m,14,10,['#.#.#','#.#.#','.###.'], 'G'); return m; }},
+  'Meerkat Standing Guard': { letter:'M', color:'#c89a64', make(){ const m=blank();
+    paint(m,10,13,['##','##','##','##','.##','##','##'], 'M');
+    paint(m,9,12,['.##.','####'], 'm'); return m; }},
+  'Black Bird (Flying)': { letter:'F', color:'#111111', make(){ const m=blank();
+    paint(m,9,9,['##....##','.##..##..','..####...'], 'F'); return m; }},
+  'Bird (Standing)': { letter:'S', color:'#ffd369', make(){ const m=blank();
+    paint(m,10,12,['.##.','####','.##.','.##.'], 'S'); return m; }},
+  'Road': { letter:'R', color:'#7f6f5f', make(){ const m=blank();
+    for(let r=0;r<H;r++) for(let c=12;c<=17;c++) m[r][c]='R'; return m; }},
+  'Fence': { letter:'N', color:'#b58b5a', make(){ const m=blank();
+    for(let r=8;r<22;r++){ m[r][7]='N'; m[r][15]='N'; m[r][23]='N'; }
+    for(let c=5;c<25;c++){ m[12][c]='N'; m[18][c]='N'; } return m; }},
+  'Impala': { letter:'I', color:'#d19a66', make(){ const m=blank();
+    paint(m,11,7,['..####..','########','########','##....##','.#....#.'], 'I'); return m; }},
+  'Elephant': { letter:'E', color:'#8b97a8', make(){ const m=blank();
+    paint(m,9,6,['.########.','##########','##########','###.##.###','###....###'], 'E');
+    paint(m,13,14,['##','##','##'], 'e'); return m; }}
+};
+
+const palette = { '.':'#00000000', w:'#245f9b', j:'#2a2a2a', b:'#4d331f', m:'#6f4b2e', e:'#5e6775' };
+const canvas = document.getElementById('sprite');
+const ctx = canvas.getContext('2d');
+const spriteSelect = document.getElementById('spriteSelect');
+const scaleInput = document.getElementById('scale');
+const legend = document.getElementById('legend');
+
+Object.keys(sprites).forEach(name=>{ const o=document.createElement('option'); o.value=name; o.textContent=`${name} (${sprites[name].letter})`; spriteSelect.appendChild(o); });
+
+function draw() {
+  const name = spriteSelect.value || Object.keys(sprites)[0];
+  const sprite = sprites[name];
+  const matrix = sprite.make();
+  const scale = Number(scaleInput.value) || 14;
+  canvas.width = W*scale; canvas.height = H*scale;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let r=0;r<H;r++) for(let c=0;c<W;c++) {
+    const ch = matrix[r][c];
+    if (ch === '.') continue;
+    ctx.fillStyle = palette[ch] || sprite.color;
+    ctx.fillRect(c*scale,r*scale,scale,scale);
+  }
+  legend.innerHTML = '';
+  const chip = document.createElement('span');
+  chip.className = 'chip';
+  chip.textContent = `Assigned letter: ${sprite.letter}`;
+  legend.appendChild(chip);
+}
+
+spriteSelect.addEventListener('change', draw);
+scaleInput.addEventListener('input', draw);
+spriteSelect.selectedIndex = 0;
+draw();
+</script>
+</body>
+</html>
