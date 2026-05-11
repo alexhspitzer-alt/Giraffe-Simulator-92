@@ -652,6 +652,7 @@
     const TURBO_TREE_RANGE_X = 25;
     let turboUntil = 0;
     let turboWasActive = false;
+    let blessTheRainsRestoreAt = 0;
     let lastChompFxAt = 0;
     const GIRAFFE_X = 10;
     const GIRAFFE_W = giraffe[0].length;
@@ -1105,6 +1106,21 @@
       ctx.restore();
     }
 
+    function restoreVisibleForageables() {
+      const cols = 70;
+      const tilePeriod = treeVariantsMirrored.full[0].length;
+      const baseTreeX = 42 + treeOffset;
+      const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
+      const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
+      for (let k = kStart; k <= kEnd; k++) {
+        if (!slotHasTree(k)) continue;
+        treeStageById.set(k, 0);
+      }
+      treeStageHpById.clear();
+      pendingAdvanceById.clear();
+      treeRustleUntilById.clear();
+    }
+
     function render(ts) {
       const scale = Math.max(1, Math.min(18, SIM_SCALE));
       const fps = isTurboActive(ts) ? TURBO_FPS : Math.max(1, Math.min(12, SIM_FPS));
@@ -1114,8 +1130,17 @@
       const baseStage = baseTreeStage();
       const turboActiveNow = isTurboActive(ts);
       if (turboActiveNow !== turboWasActive) {
+        if (!turboActiveNow && (playerUpgradeLevels['bless-the-rains'] || 0) > 0) {
+          blessTheRainsRestoreAt = ts + 1000;
+        } else if (turboActiveNow) {
+          blessTheRainsRestoreAt = 0;
+        }
         turboWasActive = turboActiveNow;
         syncTreeProgressUi();
+      }
+      if (playing && blessTheRainsRestoreAt > 0 && ts >= blessTheRainsRestoreAt) {
+        restoreVisibleForageables();
+        blessTheRainsRestoreAt = 0;
       }
 
       if (playing && ts - last >= frameTime) {
