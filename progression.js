@@ -67,7 +67,7 @@
       perLevel: 1,
       unit: 'x',
       maxLevel: 2,
-      unlockWhen: (levels) => (levels['leg-day'] || 0) >= 1 && (levels['crits-r-us'] || 0) >= 1 && (levels['long-horse'] || 0) >= 1
+      unlockWhen: (levels) => (levels['leg-day'] || 0) >= 1 && (levels['crits-r-us'] || 0) >= 1 && (levels['long-horse'] || 0) >= 1 && (levels['use-ur-noodle'] || 0) >= 1
     },
     {
       id: 'lorax-tax',
