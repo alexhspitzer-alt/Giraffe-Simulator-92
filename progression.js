@@ -61,6 +61,15 @@
       unlockWhen: (levels) => (levels['quad-stomachs'] || 0) >= 2 && (levels['leg-day'] || 0) >= 3
     },
     {
+      id: 'wakanda-foragever',
+      name: 'Wakanda Foragever',
+      effectText: 'Unlock stealth coat, then vibranium bite reach',
+      perLevel: 1,
+      unit: 'x',
+      maxLevel: 2,
+      unlockWhen: (levels) => (levels['leg-day'] || 0) >= 1 && (levels['crits-r-us'] || 0) >= 1 && (levels['long-horse'] || 0) >= 1
+    },
+    {
       id: 'lorax-tax',
       name: 'Lorax Tax',
       effectText: 'Gain bonus XP after clearing first 2 tree stages',

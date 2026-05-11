@@ -411,6 +411,7 @@
 
     const palette = {
       giraffe: {1: '#E2B24A', 2: '#8A4E1F'},
+      giraffeWakanda: {1: '#111111', 2: '#C0C0C0'},
       tree: {1: '#6C4A2D', 2: '#5A9E46'}
     };
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
@@ -827,6 +828,14 @@
       return isTurboActive() ? baseSpeed * TURBO_SPEED_MULTIPLIER : baseSpeed;
     }
 
+    function wakandaForageverLevel() {
+      return playerUpgradeLevels['wakanda-foragever'] || 0;
+    }
+
+    function activeGiraffePalette() {
+      return wakandaForageverLevel() >= 1 ? palette.giraffeWakanda : palette.giraffe;
+    }
+
     function foragingXpMultiplier() {
       const noodleLevel = playerUpgradeLevels['use-ur-noodle'] || 0;
       return Math.pow(1.10, noodleLevel);
@@ -1141,7 +1150,23 @@
       }
       const neckLevel = playerUpgradeLevels['long-horse'] || 0;
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
-      drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
+      const giraffeY = 20 + neckAdjusted.yAdjust;
+      if (wakandaForageverLevel() >= 2) {
+        const glowX = (10 + Math.floor(GIRAFFE_W / 2)) * scale;
+        const glowY = (giraffeY + Math.floor(neckAdjusted.matrix.length / 2)) * scale;
+        const glowRadius = Math.max(12, Math.floor(scale * 10));
+        const glow = ctx.createRadialGradient(glowX, glowY, Math.floor(glowRadius * 0.2), glowX, glowY, glowRadius);
+        glow.addColorStop(0, 'rgba(173, 99, 255, 0.40)');
+        glow.addColorStop(1, 'rgba(173, 99, 255, 0)');
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(glowX, glowY, glowRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      drawMatrixTransformed(neckAdjusted.matrix, 10, giraffeY, scale, activeGiraffePalette(), movementMode === 'left');
       drawForegroundObjects(cols, rows, scale);
       drawXpHud();
       drawChompFx(ts);
@@ -1228,7 +1253,8 @@
       const giraffeBackX = GIRAFFE_X;
       const giraffeMidX = Math.floor((giraffeFrontX + giraffeBackX) / 2);
       const trunkDistance = Math.abs(treeTrunkX - giraffeMidX);
-      const treeInteractRange = isTurboActive() ? TURBO_TREE_RANGE_X : TREE_INTERACT_RANGE_X;
+      const wakandaRangeMultiplier = wakandaForageverLevel() >= 2 ? 2 : 1;
+      const treeInteractRange = (isTurboActive() ? TURBO_TREE_RANGE_X : TREE_INTERACT_RANGE_X) * wakandaRangeMultiplier;
       if (trunkDistance > treeInteractRange) return;
 
       const hpKey = `${k}:${currentStage}`;
