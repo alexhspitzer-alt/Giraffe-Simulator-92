@@ -1027,6 +1027,7 @@
       if (rumenHint) {
         if (turboNow) rumenHint.textContent = 'Turbo active';
         else if (treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS) rumenHint.textContent = 'Click Rumen to activate Turbo';
+        else if (treeProgressLiters <= 5) rumenHint.textContent = 'click on leaves to forage';
         else rumenHint.textContent = 'eat 30L to activate Ruminate';
       }
       if (sceneFrame) sceneFrame.classList.toggle('turbo-glow', turboNow);
