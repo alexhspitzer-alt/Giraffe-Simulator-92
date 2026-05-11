@@ -609,6 +609,7 @@
     let movementMode = 'graze'; // graze | right | left
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
     const treeTierAtIndex = (k) => {
+      if (k === 0) return 4; // guarantee one visible level-4 tree for testing
       const normalized = ((k % 6) + 6) % 6;
       if (normalized === 5) return 4;
       if (normalized === 4) return 3;
