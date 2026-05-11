@@ -61,6 +61,15 @@
       unlockWhen: (levels) => (levels['quad-stomachs'] || 0) >= 2 && (levels['leg-day'] || 0) >= 3
     },
     {
+      id: 'lorax-tax',
+      name: 'Lorax Tax',
+      effectText: 'Gain bonus XP after clearing first 2 tree stages',
+      perLevel: 1,
+      unit: 'x',
+      maxLevel: 2,
+      unlockWhen: (levels) => (levels['molar-master'] || 0) >= 3 && (levels['crits-r-us'] || 0) >= 3
+    },
+    {
       id: 'lamarckable-effort',
       name: 'Lamarckable Effort',
       effectText: 'Level ups draw 5 cards and let you choose 2',

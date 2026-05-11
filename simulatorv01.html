@@ -832,6 +832,26 @@
       return Math.pow(1.10, noodleLevel);
     }
 
+    function treeTierBaseForagingXp(tier) {
+      if (tier === 2) return 50;
+      if (tier === 3) return 500;
+      return 10;
+    }
+
+    function loraxTaxStageXpPercents() {
+      const loraxLevel = playerUpgradeLevels['lorax-tax'] || 0;
+      if (loraxLevel >= 2) return { early: 0.80, final: 0.05 };
+      if (loraxLevel >= 1) return { early: 0.60, final: 0.15 };
+      return null;
+    }
+
+    function grantForagingXp(baseForagingXp) {
+      xp += Math.ceil(baseForagingXp * foragingXpMultiplier());
+      if (!levelUpPending && xp >= nextLevelXp(level)) {
+        openLevelUpFrame();
+      }
+    }
+
     function isTurboActive(nowTs = performance.now()) {
       return nowTs < turboUntil;
     }
@@ -1070,14 +1090,17 @@
         if (ts < pending.at) continue;
         treeStageById.set(k, pending.nextStage);
         if (pending.nextStage > pending.prevStage) advanceTreeProgress();
-        if (pending.nextStage === 4 && pending.prevStage < 4) {
-          let baseForagingXp = 10;
-          if (pending.tier === 2) baseForagingXp = 50;
-          else if (pending.tier === 3) baseForagingXp = 500;
-          xp += Math.round(baseForagingXp * foragingXpMultiplier());
-          if (!levelUpPending && xp >= nextLevelXp(level)) {
-            openLevelUpFrame();
+        const loraxTaxPercents = loraxTaxStageXpPercents();
+        const baseForagingXp = treeTierBaseForagingXp(pending.tier);
+        if (loraxTaxPercents) {
+          if (pending.nextStage >= 2 && pending.prevStage < 2) {
+            grantForagingXp(baseForagingXp * loraxTaxPercents.early);
           }
+          if (pending.nextStage === 4 && pending.prevStage < 4) {
+            grantForagingXp(baseForagingXp * loraxTaxPercents.final);
+          }
+        } else if (pending.nextStage === 4 && pending.prevStage < 4) {
+          grantForagingXp(baseForagingXp);
         }
         pendingAdvanceById.delete(k);
       }
