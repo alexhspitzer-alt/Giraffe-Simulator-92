@@ -97,6 +97,15 @@
       unlockWhen: (levels) => (levels['molar-master'] || 0) >= 3 && (levels['use-ur-noodle'] || 0) >= 3
     },
     {
+      id: 'awkward-overbite',
+      name: 'Awkward Overbite',
+      effectText: 'Carry over up to 25%/50% of overflow bite damage to the next stage',
+      perLevel: 25,
+      unit: '%',
+      maxLevel: 2,
+      unlockWhen: (levels) => (levels['molar-master'] || 0) >= 3 && (levels['leg-day'] || 0) >= 3
+    },
+    {
       id: 'lamarckable-effort',
       name: 'Lamarckable Effort',
       effectText: 'Level ups draw 5 cards and let you choose 2',
