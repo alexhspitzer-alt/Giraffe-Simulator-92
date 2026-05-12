@@ -95,6 +95,10 @@
         <option value="2">60cm</option>
         <option value="3">90cm</option>
       </select>
+      <label><input id="wakanda1" type="checkbox" /> Wakanda Foragever I</label>
+      <label><input id="wakanda2" type="checkbox" /> Wakanda Foragever II</label>
+      <label><input id="safari1" type="checkbox" /> Safari Browser I</label>
+      <label><input id="safari2" type="checkbox" /> Safari Browser II</label>
       <button id="toggle">Pause</button>
       <button id="walkRight">Walk Right</button>
       <button id="walkLeft">Walk Left</button>
@@ -252,6 +256,10 @@
     const treeStateInput = document.getElementById('treeState');
     const timeOfDayInput = document.getElementById('timeOfDay');
     const neckBoostInput = document.getElementById('neckBoost');
+    const wakanda1Input = document.getElementById('wakanda1');
+    const wakanda2Input = document.getElementById('wakanda2');
+    const safari1Input = document.getElementById('safari1');
+    const safari2Input = document.getElementById('safari2');
     const toggle = document.getElementById('toggle');
     const walkRightBtn = document.getElementById('walkRight');
     const walkLeftBtn = document.getElementById('walkLeft');
@@ -360,6 +368,7 @@
 
     const palette = {
       giraffe: {1: '#E2B24A', 2: '#8A4E1F'},
+      giraffeWakanda: {1: '#1A1A1A', 2: '#B5BCC7'},
       tree: {1: '#6C4A2D', 2: '#5A9E46'}
     };
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
@@ -749,6 +758,26 @@
       ctx.restore();
     }
 
+    function drawSafariAccessories(giraffeY, scale, facingLeft = false) {
+      const safariLevel = safari2Input.checked ? 2 : (safari1Input.checked ? 1 : 0);
+      if (safariLevel <= 0) return;
+      const mapX = (x) => facingLeft ? (10 + giraffe[0].length - 1 - x) : x;
+      for (let dx = 16; dx <= 22; dx++) {
+        ctx.fillStyle = '#B99347';
+        ctx.fillRect(mapX(dx) * scale, (giraffeY + 1) * scale, scale, scale);
+      }
+      for (let dx = 17; dx <= 21; dx++) {
+        ctx.fillStyle = '#C8A55B';
+        ctx.fillRect(mapX(dx) * scale, giraffeY * scale, scale, scale);
+      }
+      if (safariLevel >= 2) {
+        for (let dx = 17; dx <= 21; dx++) {
+          ctx.fillStyle = '#121212';
+          ctx.fillRect(mapX(dx) * scale, (giraffeY + 3) * scale, scale, scale);
+        }
+      }
+    }
+
     function render(ts) {
       const scale = Math.max(1, Math.min(18, Number(scaleInput.value) || 5));
       const fps = Math.max(1, Math.min(12, Number(fpsInput.value) || 4));
@@ -799,7 +828,25 @@
         }
       }
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
-      drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
+      const giraffeY = 20 + neckAdjusted.yAdjust;
+      const wakandaLevel = wakanda2Input.checked ? 2 : (wakanda1Input.checked ? 1 : 0);
+      if (wakandaLevel >= 2) {
+        const glowX = (10 + Math.floor(giraffe[0].length / 2)) * scale;
+        const glowY = (giraffeY + Math.floor(neckAdjusted.matrix.length / 2)) * scale;
+        const glowRadius = Math.max(12, Math.floor(scale * 10));
+        const glow = ctx.createRadialGradient(glowX, glowY, Math.floor(glowRadius * 0.2), glowX, glowY, glowRadius);
+        glow.addColorStop(0, 'rgba(173, 99, 255, 0.40)');
+        glow.addColorStop(1, 'rgba(173, 99, 255, 0)');
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(glowX, glowY, glowRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      drawMatrixTransformed(neckAdjusted.matrix, 10, giraffeY, scale, wakandaLevel >= 1 ? palette.giraffeWakanda : palette.giraffe, movementMode === 'left');
+      drawSafariAccessories(giraffeY, scale, movementMode === 'left');
 
       requestAnimationFrame(render);
     }
