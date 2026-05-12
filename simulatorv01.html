@@ -671,6 +671,8 @@
     let keyRightDown = false;
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
     const treeStageHpById = new Map(); // `${k}:${stage}` -> hp remaining
+    const shrubHpBySlot = new Map(); // slot -> hp remaining
+    const shrubRustleUntilBySlot = new Map(); // slot -> rustle end timestamp
     const treeRustleUntilById = new Map(); // k -> timestamp(ms) when rustle ends
     const pendingAdvanceById = new Map(); // k -> {at, nextStage, prevStage, tier}
     let xp = 0;
@@ -833,9 +835,13 @@
         } else if (typeRoll < 0.8) {
           matrix = shrubVariants[Math.floor(pseudoRandom01(slot + 89) * shrubVariants.length) % shrubVariants.length];
           colors = shrubPalette;
+          const hp = shrubHpBySlot.has(slot) ? shrubHpBySlot.get(slot) : 7;
+          if (hp <= 0) continue;
         }
         const worldX = slot * objectPeriod;
-        const x = worldX + parallaxOffset;
+        const rustleUntil = shrubRustleUntilBySlot.get(slot) || 0;
+        const rustleX = rustleUntil > performance.now() ? (Math.floor((performance.now() / 50) % 2) === 0 ? -0.15 : 0.15) : 0;
+        const x = worldX + parallaxOffset + rustleX;
         const bottomY = rows - 2;
         const y = bottomY - matrix.length;
         drawMatrix(matrix, x, y, scale, colors);
@@ -1146,6 +1152,15 @@
       treeProgressLiters = Math.min(RUMEN_MAX_LITERS, treeProgressBaseLiters + bonusLiters);
       syncTreeProgressUi();
     }
+    function grantRumenLiters(amount) {
+      const liters = Math.max(0, Math.floor(amount));
+      if (liters <= 0) return;
+      treeProgressBaseLiters = Math.min(RUMEN_MAX_LITERS, treeProgressBaseLiters + liters);
+      const quadStomachsLevel = playerUpgradeLevels['quad-stomachs'] || 0;
+      const bonusLiters = Math.floor(treeProgressBaseLiters / 4) * quadStomachsLevel;
+      treeProgressLiters = Math.min(RUMEN_MAX_LITERS, treeProgressBaseLiters + bonusLiters);
+      syncTreeProgressUi();
+    }
 
     function baseTreeStage() {
       const state = SIM_TREE_STATE;
@@ -1419,6 +1434,35 @@
       const rect = scene.getBoundingClientRect();
       const xTile = (event.clientX - rect.left) / scale;
       const yTile = (event.clientY - rect.top) / scale;
+      const cols = 70;
+      const rows = 54;
+      const shrubObjectPeriod = 44;
+      const shrubParallaxOffset = treeOffset * 1.12;
+      const shrubCenter = Math.floor((xTile - shrubParallaxOffset) / shrubObjectPeriod);
+      for (let ds = -1; ds <= 1; ds++) {
+        const slot = shrubCenter + ds;
+        if (pseudoRandom01(slot + 17) > 0.34) continue;
+        const typeRoll = pseudoRandom01(slot + 43);
+        if (typeRoll < 0.4 || typeRoll >= 0.8) continue;
+        const shrubHp = shrubHpBySlot.has(slot) ? shrubHpBySlot.get(slot) : 7;
+        if (shrubHp <= 0) continue;
+        const shrubMatrix = shrubVariants[Math.floor(pseudoRandom01(slot + 89) * shrubVariants.length) % shrubVariants.length];
+        const shrubX = slot * shrubObjectPeriod + shrubParallaxOffset;
+        const shrubY = (rows - 2) - shrubMatrix.length;
+        const localX = Math.floor(xTile - shrubX);
+        const localY = Math.floor(yTile - shrubY);
+        if (localX < 0 || localX >= shrubMatrix[0].length || localY < 0 || localY >= shrubMatrix.length) continue;
+        if (!shrubMatrix[localY][localX]) continue;
+        shrubRustleUntilBySlot.set(slot, performance.now() + 140);
+        const nextShrubHp = shrubHp - Math.ceil(baseBiteDamage());
+        if (nextShrubHp <= 0) {
+          shrubHpBySlot.set(slot, 0);
+          grantRumenLiters(1);
+        } else {
+          shrubHpBySlot.set(slot, nextShrubHp);
+        }
+        return;
+      }
 
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
