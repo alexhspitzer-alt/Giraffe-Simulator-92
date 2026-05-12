@@ -106,6 +106,15 @@
       unlockWhen: (levels) => (levels['molar-master'] || 0) >= 3 && (levels['leg-day'] || 0) >= 3
     },
     {
+      id: 'safari-browser',
+      name: 'Safari Browser',
+      effectText: 'Dress to impress: safari hat, then sunglasses',
+      perLevel: 1,
+      unit: 'x',
+      maxLevel: 2,
+      unlockWhen: (levels) => (levels['long-horse'] || 0) >= 3 && (levels['leg-day'] || 0) >= 3
+    },
+    {
       id: 'lamarckable-effort',
       name: 'Lamarckable Effort',
       effectText: 'Level ups draw 5 cards and let you choose 2',

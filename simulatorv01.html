@@ -907,6 +907,38 @@
     function activeGiraffePalette() {
       return wakandaForageverLevel() >= 1 ? palette.giraffeWakanda : palette.giraffe;
     }
+    function safariBrowserLevel() {
+      return playerUpgradeLevels['safari-browser'] || 0;
+    }
+    function drawSafariAccessories(giraffeY, scale, facingLeft = false) {
+      const level = safariBrowserLevel();
+      if (level <= 0) return;
+      const hatBrim = '#B99347';
+      const hatCrown = '#C8A55B';
+      const glasses = '#121212';
+      const xBase = GIRAFFE_X;
+      const headTopY = giraffeY;
+      const mapX = (x) => facingLeft ? (xBase + GIRAFFE_W - 1 - x) : x;
+
+      const brimY = headTopY + 1;
+      for (let dx = 16; dx <= 22; dx++) {
+        ctx.fillStyle = hatBrim;
+        ctx.fillRect(mapX(dx) * scale, brimY * scale, scale, scale);
+      }
+      const crownY = headTopY;
+      for (let dx = 17; dx <= 21; dx++) {
+        ctx.fillStyle = hatCrown;
+        ctx.fillRect(mapX(dx) * scale, crownY * scale, scale, scale);
+      }
+
+      if (level >= 2) {
+        const glassY = headTopY + 3;
+        for (let dx = 17; dx <= 21; dx++) {
+          ctx.fillStyle = glasses;
+          ctx.fillRect(mapX(dx) * scale, glassY * scale, scale, scale);
+        }
+      }
+    }
 
     function foragingXpMultiplier() {
       const noodleLevel = playerUpgradeLevels['use-ur-noodle'] || 0;
@@ -1326,6 +1358,7 @@
         ctx.restore();
       }
       drawMatrixTransformed(neckAdjusted.matrix, 10, giraffeY, scale, activeGiraffePalette(), movementMode === 'left');
+      drawSafariAccessories(giraffeY, scale, movementMode === 'left');
       drawForegroundObjects(cols, rows, scale);
       drawXpHud();
       drawChompFx(ts);
