@@ -708,7 +708,7 @@
     const LEVEL4_STRETCH_X = 1.5;
     const LEVEL4_STRETCH_Y = 2.52;
     function level4TopYForBaseline(treeY, matrix) {
-      const baselineY = treeY + treeVariantsMirrored.full.length - 1 + 5;
+      const baselineY = treeY + treeVariantsMirrored.full.length - 1 - 10;
       return baselineY - Math.ceil(matrix.length * LEVEL4_STRETCH_Y) + 1;
     }
     function drawLevel4TreeStretched(matrix, xOff, topY, scale, colors, stretchX = LEVEL4_STRETCH_X, stretchY = LEVEL4_STRETCH_Y) {
