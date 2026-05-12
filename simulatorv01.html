@@ -840,7 +840,7 @@
         }
         const worldX = slot * objectPeriod;
         const rustleUntil = shrubRustleUntilBySlot.get(slot) || 0;
-        const rustleX = rustleUntil > performance.now() ? (Math.floor((performance.now() / 50) % 2) === 0 ? -0.15 : 0.15) : 0;
+        const rustleX = rustleUntil > performance.now() ? (Math.floor((performance.now() / 80) % 2) === 0 ? -1 : 1) : 0;
         const x = worldX + parallaxOffset + rustleX;
         const bottomY = rows - 2;
         const y = bottomY - matrix.length;
