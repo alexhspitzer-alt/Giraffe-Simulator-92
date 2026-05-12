@@ -1149,6 +1149,10 @@
       if (stage >= 4) return treeLevel4VariantsMirrored.depleted;
       return treeLevel4VariantsMirrored.full;
     }
+    function level4TopYForBaseline(treeY, matrix) {
+      const baselineY = treeY + treeVariantsMirrored.full.length - 1;
+      return baselineY - matrix.length + 1;
+    }
 
     function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, flipHorizontal = false) {
       const width = matrix[0].length * scale;
@@ -1267,7 +1271,7 @@
         const slotOffsetX = treeXOffsetAtIndex(k);
         if (tier === 4) {
           const tree = treeLevel4ForStage(stage);
-          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod + slotOffsetX - 7, treeY - 24, scale, treePaletteLevel3, rustleX);
+          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod + slotOffsetX - 7, level4TopYForBaseline(treeY, tree), scale, treePaletteLevel3, rustleX);
         } else if (tier === 3) {
           const tree = treeLevel3ForStage(stage);
           drawTreeWithRustle(tree, baseTreeX + k * tilePeriod + slotOffsetX - 4, treeY - 16, scale, treePaletteLevel3, rustleX);
@@ -1372,7 +1376,9 @@
         const tier = treeTierAtIndex(k);
         const slotOffsetX = treeXOffsetAtIndex(k);
         const treeX = baseTreeX + k * tilePeriod + slotOffsetX + (tier >= 3 ? -4 : tier === 2 ? -3 : 0);
-        const effectiveTreeY = treeY + (tier === 4 ? -24 : tier === 3 ? -16 : tier === 2 ? -10 : 0);
+        const effectiveTreeY = tier === 4
+          ? level4TopYForBaseline(treeY, treeLevel4ForStage(treeStageById.has(k) ? treeStageById.get(k) : baseStage))
+          : treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
         const localX = Math.floor(xTile - treeX);
         const localY = Math.floor(yTile - effectiveTreeY);
         const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
