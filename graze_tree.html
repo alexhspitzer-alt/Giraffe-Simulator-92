@@ -792,10 +792,6 @@
           drawMatrix(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree);
         }
       }
-      // Dedicated level-4 test tree (graze scene only).
-      const level4TestTree = treeLevel4ForStage(baseStage);
-      drawLevel4TreeStretched(level4TestTree, 30, treeY - 6, scale, treePaletteLevel3, 2);
-
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
       drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
 
