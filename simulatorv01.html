@@ -1151,7 +1151,19 @@
     }
     function level4TopYForBaseline(treeY, matrix) {
       const baselineY = treeY + treeVariantsMirrored.full.length - 1;
-      return baselineY - matrix.length + 1;
+      return baselineY - Math.ceil(matrix.length * LEVEL4_STRETCH_Y) + 1;
+    }
+    const LEVEL4_STRETCH_X = 1.5;
+    const LEVEL4_STRETCH_Y = 2.52;
+    function drawLevel4TreeStretched(matrix, xOff, topY, scale, colors) {
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+          const v = matrix[r][c];
+          if (!v) continue;
+          ctx.fillStyle = colors[v];
+          ctx.fillRect((xOff + c * LEVEL4_STRETCH_X) * scale, (topY + r * LEVEL4_STRETCH_Y) * scale, scale * LEVEL4_STRETCH_X, scale * LEVEL4_STRETCH_Y);
+        }
+      }
     }
 
     function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, flipHorizontal = false) {
@@ -1271,7 +1283,7 @@
         const slotOffsetX = treeXOffsetAtIndex(k);
         if (tier === 4) {
           const tree = treeLevel4ForStage(stage);
-          drawTreeWithRustle(tree, baseTreeX + k * tilePeriod + slotOffsetX - 7, level4TopYForBaseline(treeY, tree), scale, treePaletteLevel3, rustleX);
+          drawLevel4TreeStretched(tree, baseTreeX + k * tilePeriod + slotOffsetX - 7 + rustleX, level4TopYForBaseline(treeY, tree), scale, treePaletteLevel3);
         } else if (tier === 3) {
           const tree = treeLevel3ForStage(stage);
           drawTreeWithRustle(tree, baseTreeX + k * tilePeriod + slotOffsetX - 4, treeY - 16, scale, treePaletteLevel3, rustleX);
@@ -1387,15 +1399,17 @@
           tier === 3 ? treeLevel3ForStage(currentStage) :
           tier === 2 ? treeLevel2ForStage(currentStage) :
           treeForStage(currentStage);
-        if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) continue;
-        const treeCenterX = treeX + currentTree[0].length / 2;
-        const treeCenterY = effectiveTreeY + currentTree.length / 2;
+        const localTestX = tier === 4 ? Math.floor(localX / LEVEL4_STRETCH_X) : localX;
+        const localTestY = tier === 4 ? Math.floor(localY / LEVEL4_STRETCH_Y) : localY;
+        if (localTestX < 0 || localTestX >= currentTree[0].length || localTestY < 0 || localTestY >= currentTree.length) continue;
+        const treeCenterX = treeX + (tier === 4 ? currentTree[0].length * LEVEL4_STRETCH_X : currentTree[0].length) / 2;
+        const treeCenterY = effectiveTreeY + (tier === 4 ? currentTree.length * LEVEL4_STRETCH_Y : currentTree.length) / 2;
         const dx = xTile - treeCenterX;
         const dy = yTile - treeCenterY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (distance < bestDistance) {
           bestDistance = distance;
-          target = { k, tier, treeX, effectiveTreeY, localX, localY, currentStage, currentTree };
+          target = { k, tier, treeX, effectiveTreeY, localX: localTestX, localY: localTestY, currentStage, currentTree };
         }
       }
       if (!target) return;
