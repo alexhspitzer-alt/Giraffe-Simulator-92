@@ -761,7 +761,9 @@
     function drawSafariAccessories(giraffeY, scale, facingLeft = false) {
       const safariLevel = safari2Input.checked ? 2 : (safari1Input.checked ? 1 : 0);
       if (safariLevel <= 0) return;
-      const mapX = (x) => facingLeft ? (10 + giraffe[0].length - 1 - x) : x;
+      const wakandaLevel = wakanda2Input.checked ? 2 : (wakanda1Input.checked ? 1 : 0);
+      const glassesColor = wakandaLevel >= 1 ? '#B5BCC7' : '#121212';
+      const mapX = (x) => facingLeft ? (10 + giraffe[0].length - 1 - x) : (10 + x);
       for (let dx = 16; dx <= 22; dx++) {
         ctx.fillStyle = '#B99347';
         ctx.fillRect(mapX(dx) * scale, (giraffeY + 1) * scale, scale, scale);
@@ -772,7 +774,7 @@
       }
       if (safariLevel >= 2) {
         for (let dx = 17; dx <= 21; dx++) {
-          ctx.fillStyle = '#121212';
+          ctx.fillStyle = glassesColor;
           ctx.fillRect(mapX(dx) * scale, (giraffeY + 3) * scale, scale, scale);
         }
       }

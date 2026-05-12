@@ -921,10 +921,10 @@
       if (level <= 0) return;
       const hatBrim = '#B99347';
       const hatCrown = '#C8A55B';
-      const glasses = '#121212';
+      const glasses = wakandaForageverLevel() >= 1 ? '#B5BCC7' : '#121212';
       const xBase = GIRAFFE_X;
       const headTopY = giraffeY;
-      const mapX = (x) => facingLeft ? (xBase + GIRAFFE_W - 1 - x) : x;
+      const mapX = (x) => facingLeft ? (xBase + GIRAFFE_W - 1 - x) : (xBase + x);
 
       const brimY = headTopY + 1;
       for (let dx = 16; dx <= 22; dx++) {
