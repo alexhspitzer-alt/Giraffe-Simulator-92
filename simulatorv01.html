@@ -778,7 +778,8 @@
 
     function drawForegroundObjects(cols, rows, scale) {
       const objectPeriod = 44;
-      const slotStart = Math.floor((-treeOffset) / objectPeriod) - 2;
+      const parallaxOffset = treeOffset * 1.12;
+      const slotStart = Math.floor((-parallaxOffset) / objectPeriod) - 2;
       const slotCount = Math.ceil(cols / objectPeriod) + 5;
       for (let i = 0; i < slotCount; i++) {
         const slot = slotStart + i;
@@ -794,7 +795,6 @@
           colors = shrubPalette;
         }
         const worldX = slot * objectPeriod;
-        const parallaxOffset = treeOffset * 1.12;
         const x = worldX + parallaxOffset;
         const bottomY = rows - 2;
         const y = bottomY - matrix.length;
