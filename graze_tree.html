@@ -831,12 +831,12 @@
       const giraffeY = 20 + neckAdjusted.yAdjust;
       const wakandaLevel = wakanda2Input.checked ? 2 : (wakanda1Input.checked ? 1 : 0);
       if (wakandaLevel >= 2) {
-        const glowX = (10 + Math.floor(giraffe[0].length / 2)) * scale;
-        const glowY = (giraffeY + Math.floor(neckAdjusted.matrix.length / 2)) * scale;
-        const glowRadius = Math.max(12, Math.floor(scale * 10));
+        const glowX = (13 + Math.floor(giraffe[0].length / 2)) * scale;
+        const glowY = (giraffeY + 2 + Math.floor(neckAdjusted.matrix.length / 2)) * scale;
+        const glowRadius = Math.max(16, Math.floor(scale * 13));
         const glow = ctx.createRadialGradient(glowX, glowY, Math.floor(glowRadius * 0.2), glowX, glowY, glowRadius);
-        glow.addColorStop(0, 'rgba(173, 99, 255, 0.40)');
-        glow.addColorStop(1, 'rgba(173, 99, 255, 0)');
+        glow.addColorStop(0, 'rgba(118, 122, 255, 0.45)');
+        glow.addColorStop(1, 'rgba(118, 122, 255, 0)');
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
         ctx.fillStyle = glow;
