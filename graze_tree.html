@@ -833,59 +833,72 @@
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
       const treeY = 24;
-      const k = Math.floor((xTile - baseTreeX) / tilePeriod);
-      const tier = treeTierAtIndex(k);
-      const treeX = baseTreeX + k * tilePeriod + (tier >= 3 ? -4 : tier === 2 ? -3 : 0);
-      const tier4Stage = treeStageById.has(k) ? treeStageById.get(k) : baseTreeStage();
-      const tier4Tree = treeLevel4ForStage(tier4Stage);
-      const effectiveTreeY = tier === 4
-        ? level4TopYForBaseline(treeY, tier4Tree)
-        : treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
-      let localX = Math.floor(xTile - treeX);
-      let localY = Math.floor(yTile - effectiveTreeY);
-
+      const kCenter = Math.floor((xTile - baseTreeX) / tilePeriod);
       const baseStage = baseTreeStage();
-      const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
-      const currentTree =
-        tier === 4 ? treeLevel4ForStage(currentStage) :
-        tier === 3 ? treeLevel3ForStage(currentStage) :
-        tier === 2 ? treeLevel2ForStage(currentStage) :
-        treeForStage(currentStage);
-      if (tier === 4) {
-        localX = Math.floor(localX / LEVEL4_STRETCH_X);
-        localY = Math.floor(localY / LEVEL4_STRETCH_Y);
-      }
       const neckLevel = Number(neckBoostInput.value) || 0;
-      if (tier === 4 && neckLevel < 3) return;
+      let target = null;
 
-      if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) return;
+      for (let dk = -2; dk <= 2; dk++) {
+        const k = kCenter + dk;
+        const tier = treeTierAtIndex(k);
+        if (tier === 4 && neckLevel < 3) continue;
 
-      // Green foliage tiles are primary click targets.
-      // For sparse stages, allow clicks anywhere inside the remaining canopy bounds.
-      let minX = Infinity;
-      let maxX = -1;
-      let minY = Infinity;
-      let maxY = -1;
-      for (let r = 0; r < currentTree.length; r++) {
-        for (let c = 0; c < currentTree[0].length; c++) {
-          if (isLeafValue(currentTree[r][c])) {
-            minX = Math.min(minX, c);
-            maxX = Math.max(maxX, c);
-            minY = Math.min(minY, r);
-            maxY = Math.max(maxY, r);
+        const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
+        const currentTree =
+          tier === 4 ? treeLevel4ForStage(currentStage) :
+          tier === 3 ? treeLevel3ForStage(currentStage) :
+          tier === 2 ? treeLevel2ForStage(currentStage) :
+          treeForStage(currentStage);
+
+        const treeX = baseTreeX + k * tilePeriod + (tier >= 3 ? -4 : tier === 2 ? -3 : 0);
+        const effectiveTreeY = tier === 4
+          ? level4TopYForBaseline(treeY, currentTree)
+          : treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
+
+        let localX = Math.floor(xTile - treeX);
+        let localY = Math.floor(yTile - effectiveTreeY);
+        if (tier === 4) {
+          localX = Math.floor(localX / LEVEL4_STRETCH_X);
+          localY = Math.floor(localY / LEVEL4_STRETCH_Y);
+        }
+        if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) continue;
+
+        let minX = Infinity;
+        let maxX = -1;
+        let minY = Infinity;
+        let maxY = -1;
+        for (let r = 0; r < currentTree.length; r++) {
+          for (let c = 0; c < currentTree[0].length; c++) {
+            if (isLeafValue(currentTree[r][c])) {
+              minX = Math.min(minX, c);
+              maxX = Math.max(maxX, c);
+              minY = Math.min(minY, r);
+              maxY = Math.max(maxY, r);
+            }
           }
+        }
+        if (maxX === -1) continue;
+
+        const hitLeaf = isLeafValue(currentTree[localY][localX]);
+        const hitCanopyBounds =
+          localX >= minX && localX <= maxX &&
+          localY >= minY && localY <= maxY;
+        if (!hitLeaf && !hitCanopyBounds) continue;
+
+        const treeCenterX = treeX + ((tier === 4 ? currentTree[0].length * LEVEL4_STRETCH_X : currentTree[0].length) / 2);
+        const treeCenterY = effectiveTreeY + ((tier === 4 ? currentTree.length * LEVEL4_STRETCH_Y : currentTree.length) / 2);
+        const dx = xTile - treeCenterX;
+        const dy = yTile - treeCenterY;
+        const distance = dx * dx + dy * dy;
+
+        if (!target || distance < target.distance) {
+          target = { k, currentStage, distance };
         }
       }
 
-      if (maxX === -1) return; // already depleted
-      const hitLeaf = isLeafValue(currentTree[localY][localX]);
-      const hitCanopyBounds =
-        localX >= minX && localX <= maxX &&
-        localY >= minY && localY <= maxY;
-      if (!hitLeaf && !hitCanopyBounds) return;
-
-      const nextStage = Math.min(4, currentStage + 1);
-      treeStageById.set(k, nextStage);
+      if (!target) return;
+      const nextStage = Math.min(4, target.currentStage + 1);
+      treeStageById.set(target.k, nextStage);
     });
 
     applySkyForTimeOfDay();
