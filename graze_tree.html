@@ -707,6 +707,10 @@
     }
     const LEVEL4_STRETCH_X = 1.25;
     const LEVEL4_STRETCH_Y = 1.8;
+    function level4TopYForBaseline(treeY, matrix) {
+      const baselineY = treeY + treeVariantsMirrored.full.length - 1;
+      return baselineY - Math.ceil(matrix.length * LEVEL4_STRETCH_Y) + 1;
+    }
     function drawLevel4TreeStretched(matrix, xOff, topY, scale, colors, stretchX = LEVEL4_STRETCH_X, stretchY = LEVEL4_STRETCH_Y) {
       for (let r = 0; r < matrix.length; r++) {
         for (let c = 0; c < matrix[0].length; c++) {
@@ -782,7 +786,7 @@
         const tier = treeTierAtIndex(k);
         if (tier === 4) {
           const tree = treeLevel4ForStage(stage);
-          drawLevel4TreeStretched(tree, baseTreeX + k * tilePeriod - 4, treeY - 24, scale, treePaletteLevel3);
+          drawLevel4TreeStretched(tree, baseTreeX + k * tilePeriod - 4, level4TopYForBaseline(treeY, tree), scale, treePaletteLevel3);
         } else if (tier === 3) {
           const tree = treeLevel3ForStage(stage);
           drawMatrix(tree, baseTreeX + k * tilePeriod - 4, treeY - 16, scale, treePaletteLevel3);
@@ -832,7 +836,11 @@
       const k = Math.floor((xTile - baseTreeX) / tilePeriod);
       const tier = treeTierAtIndex(k);
       const treeX = baseTreeX + k * tilePeriod + (tier >= 3 ? -4 : tier === 2 ? -3 : 0);
-      const effectiveTreeY = treeY + (tier === 4 ? -24 : tier === 3 ? -16 : tier === 2 ? -10 : 0);
+      const tier4Stage = treeStageById.has(k) ? treeStageById.get(k) : baseTreeStage();
+      const tier4Tree = treeLevel4ForStage(tier4Stage);
+      const effectiveTreeY = tier === 4
+        ? level4TopYForBaseline(treeY, tier4Tree)
+        : treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
       let localX = Math.floor(xTile - treeX);
       let localY = Math.floor(yTile - effectiveTreeY);
 
