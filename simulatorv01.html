@@ -916,30 +916,43 @@
     function safariBrowserLevel() {
       return playerUpgradeLevels['safari-browser'] || 0;
     }
-    function drawSafariAccessories(giraffeY, scale, facingLeft = false) {
+    function drawSafariAccessories(giraffeMatrix, giraffeX, giraffeY, scale, facingLeft = false) {
       const level = safariBrowserLevel();
       if (level <= 0) return;
       const hatBrim = '#B99347';
       const hatCrown = '#C8A55B';
       const glasses = wakandaForageverLevel() >= 1 ? '#B5BCC7' : '#121212';
-      const xBase = GIRAFFE_X;
-      const headTopY = giraffeY;
-      const mapX = (x) => facingLeft ? (xBase + GIRAFFE_W - 1 - x) : (xBase + x);
-
-      const brimY = headTopY + 1;
-      for (let dx = 16; dx <= 22; dx++) {
+      let minX = Infinity;
+      let maxX = -1;
+      let minY = Infinity;
+      for (let r = 0; r <= Math.min(12, giraffeMatrix.length - 1); r++) {
+        for (let c = 14; c <= Math.min(23, giraffeMatrix[0].length - 1); c++) {
+          if (!giraffeMatrix[r][c]) continue;
+          minX = Math.min(minX, c);
+          maxX = Math.max(maxX, c);
+          minY = Math.min(minY, r);
+        }
+      }
+      if (maxX === -1) return;
+      const mapX = (localX) => facingLeft
+        ? (giraffeX + giraffeMatrix[0].length - 1 - localX)
+        : (giraffeX + localX);
+      const brimStart = minX;
+      const brimEnd = maxX + 1;
+      const brimY = giraffeY + minY + 1;
+      for (let dx = brimStart; dx <= brimEnd; dx++) {
         ctx.fillStyle = hatBrim;
         ctx.fillRect(mapX(dx) * scale, brimY * scale, scale, scale);
       }
-      const crownY = headTopY;
-      for (let dx = 17; dx <= 21; dx++) {
+      const crownY = giraffeY + minY;
+      for (let dx = brimStart + 1; dx <= brimEnd - 1; dx++) {
         ctx.fillStyle = hatCrown;
         ctx.fillRect(mapX(dx) * scale, crownY * scale, scale, scale);
       }
 
       if (level >= 2) {
-        const glassY = headTopY + 3;
-        for (let dx = 17; dx <= 21; dx++) {
+        const glassY = giraffeY + minY + 3;
+        for (let dx = brimStart + 1; dx <= brimEnd - 1; dx++) {
           ctx.fillStyle = glasses;
           ctx.fillRect(mapX(dx) * scale, glassY * scale, scale, scale);
         }
@@ -1373,7 +1386,7 @@
         ctx.restore();
       }
       drawMatrixTransformed(neckAdjusted.matrix, 10, giraffeY, scale, activeGiraffePalette(), movementMode === 'left');
-      drawSafariAccessories(giraffeY, scale, movementMode === 'left');
+      drawSafariAccessories(neckAdjusted.matrix, 10, giraffeY, scale, movementMode === 'left');
       drawForegroundObjects(cols, rows, scale);
       drawXpHud();
       drawChompFx(ts);

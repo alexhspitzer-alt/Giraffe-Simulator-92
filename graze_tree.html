@@ -758,24 +758,40 @@
       ctx.restore();
     }
 
-    function drawSafariAccessories(giraffeY, scale, facingLeft = false) {
+    function drawSafariAccessories(giraffeMatrix, giraffeX, giraffeY, scale, facingLeft = false) {
       const safariLevel = safari2Input.checked ? 2 : (safari1Input.checked ? 1 : 0);
       if (safariLevel <= 0) return;
       const wakandaLevel = wakanda2Input.checked ? 2 : (wakanda1Input.checked ? 1 : 0);
       const glassesColor = wakandaLevel >= 1 ? '#B5BCC7' : '#121212';
-      const mapX = (x) => facingLeft ? (10 + giraffe[0].length - 1 - x) : (10 + x);
-      for (let dx = 16; dx <= 22; dx++) {
-        ctx.fillStyle = '#B99347';
-        ctx.fillRect(mapX(dx) * scale, (giraffeY + 1) * scale, scale, scale);
+      let minX = Infinity;
+      let maxX = -1;
+      let minY = Infinity;
+      for (let r = 0; r <= Math.min(12, giraffeMatrix.length - 1); r++) {
+        for (let c = 14; c <= Math.min(23, giraffeMatrix[0].length - 1); c++) {
+          if (!giraffeMatrix[r][c]) continue;
+          minX = Math.min(minX, c);
+          maxX = Math.max(maxX, c);
+          minY = Math.min(minY, r);
+        }
       }
-      for (let dx = 17; dx <= 21; dx++) {
+      if (maxX === -1) return;
+      const mapX = (localX) => facingLeft
+        ? (giraffeX + giraffeMatrix[0].length - 1 - localX)
+        : (giraffeX + localX);
+      const brimStart = minX;
+      const brimEnd = maxX + 1;
+      for (let dx = brimStart; dx <= brimEnd; dx++) {
+        ctx.fillStyle = '#B99347';
+        ctx.fillRect(mapX(dx) * scale, (giraffeY + minY + 1) * scale, scale, scale);
+      }
+      for (let dx = brimStart + 1; dx <= brimEnd - 1; dx++) {
         ctx.fillStyle = '#C8A55B';
-        ctx.fillRect(mapX(dx) * scale, giraffeY * scale, scale, scale);
+        ctx.fillRect(mapX(dx) * scale, (giraffeY + minY) * scale, scale, scale);
       }
       if (safariLevel >= 2) {
-        for (let dx = 17; dx <= 21; dx++) {
+        for (let dx = brimStart + 1; dx <= brimEnd - 1; dx++) {
           ctx.fillStyle = glassesColor;
-          ctx.fillRect(mapX(dx) * scale, (giraffeY + 3) * scale, scale, scale);
+          ctx.fillRect(mapX(dx) * scale, (giraffeY + minY + 3) * scale, scale, scale);
         }
       }
     }
@@ -848,7 +864,7 @@
         ctx.restore();
       }
       drawMatrixTransformed(neckAdjusted.matrix, 10, giraffeY, scale, wakandaLevel >= 1 ? palette.giraffeWakanda : palette.giraffe, movementMode === 'left');
-      drawSafariAccessories(giraffeY, scale, movementMode === 'left');
+      drawSafariAccessories(neckAdjusted.matrix, 10, giraffeY, scale, movementMode === 'left');
 
       requestAnimationFrame(render);
     }
