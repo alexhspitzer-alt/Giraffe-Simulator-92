@@ -673,6 +673,8 @@
     const treeStageHpById = new Map(); // `${k}:${stage}` -> hp remaining
     const shrubHpBySlot = new Map(); // slot -> hp remaining
     const shrubRustleUntilBySlot = new Map(); // slot -> rustle end timestamp
+    const termiteHpBySlot = new Map(); // slot -> hp remaining
+    const termiteRustleUntilBySlot = new Map(); // slot -> rustle end timestamp
     const treeRustleUntilById = new Map(); // k -> timestamp(ms) when rustle ends
     const pendingAdvanceById = new Map(); // k -> {at, nextStage, prevStage, tier}
     let xp = 0;
@@ -832,14 +834,18 @@
         if (typeRoll < 0.4) {
           matrix = termiteVariants[Math.floor(pseudoRandom01(slot + 71) * termiteVariants.length) % termiteVariants.length];
           colors = termitePalette;
+          const hp = termiteHpBySlot.has(slot) ? termiteHpBySlot.get(slot) : termiteMaxHpForMatrix(matrix);
+          if (hp <= 0) continue;
         } else if (typeRoll < 0.8) {
           matrix = shrubVariants[Math.floor(pseudoRandom01(slot + 89) * shrubVariants.length) % shrubVariants.length];
           colors = shrubPalette;
-          const hp = shrubHpBySlot.has(slot) ? shrubHpBySlot.get(slot) : 7;
+          const hp = shrubHpBySlot.has(slot) ? shrubHpBySlot.get(slot) : shrubMaxHpForMatrix(matrix);
           if (hp <= 0) continue;
         }
         const worldX = slot * objectPeriod;
-        const rustleUntil = shrubRustleUntilBySlot.get(slot) || 0;
+        const rustleUntil = typeRoll < 0.4
+          ? (termiteRustleUntilBySlot.get(slot) || 0)
+          : (shrubRustleUntilBySlot.get(slot) || 0);
         const rustleX = rustleUntil > performance.now() ? (Math.floor((performance.now() / 80) % 2) === 0 ? -1 : 1) : 0;
         const x = worldX + parallaxOffset + rustleX;
         const bottomY = rows - 2;
@@ -1174,6 +1180,18 @@
       treeProgressLiters = Math.min(RUMEN_MAX_LITERS, treeProgressBaseLiters + bonusLiters);
       syncTreeProgressUi();
     }
+    function shrubMaxHpForMatrix(matrix) {
+      return matrix.length >= 5 ? 14 : 7;
+    }
+    function shrubRumenRewardForMatrix(matrix) {
+      return matrix.length >= 5 ? 3 : 1;
+    }
+    function termiteMaxHpForMatrix(matrix) {
+      return matrix.length >= 8 ? 24 : 11;
+    }
+    function termiteXpRewardForMatrix(matrix) {
+      return matrix.length >= 8 ? 24 : 11;
+    }
 
     function baseTreeStage() {
       const state = SIM_TREE_STATE;
@@ -1456,23 +1474,41 @@
         const slot = shrubCenter + ds;
         if (pseudoRandom01(slot + 17) > 0.34) continue;
         const typeRoll = pseudoRandom01(slot + 43);
-        if (typeRoll < 0.4 || typeRoll >= 0.8) continue;
-        const shrubHp = shrubHpBySlot.has(slot) ? shrubHpBySlot.get(slot) : 7;
-        if (shrubHp <= 0) continue;
-        const shrubMatrix = shrubVariants[Math.floor(pseudoRandom01(slot + 89) * shrubVariants.length) % shrubVariants.length];
-        const shrubX = slot * shrubObjectPeriod + shrubParallaxOffset;
-        const shrubY = (rows - 2) - shrubMatrix.length;
-        const localX = Math.floor(xTile - shrubX);
-        const localY = Math.floor(yTile - shrubY);
-        if (localX < 0 || localX >= shrubMatrix[0].length || localY < 0 || localY >= shrubMatrix.length) continue;
-        if (!shrubMatrix[localY][localX]) continue;
-        shrubRustleUntilBySlot.set(slot, performance.now() + 140);
-        const nextShrubHp = shrubHp - Math.ceil(baseBiteDamage());
-        if (nextShrubHp <= 0) {
-          shrubHpBySlot.set(slot, 0);
-          grantRumenLiters(1);
+        let isTermite = false;
+        let forageMatrix = null;
+        let currentHp = 0;
+        if (typeRoll < 0.4) {
+          isTermite = true;
+          forageMatrix = termiteVariants[Math.floor(pseudoRandom01(slot + 71) * termiteVariants.length) % termiteVariants.length];
+          currentHp = termiteHpBySlot.has(slot) ? termiteHpBySlot.get(slot) : termiteMaxHpForMatrix(forageMatrix);
+        } else if (typeRoll < 0.8) {
+          forageMatrix = shrubVariants[Math.floor(pseudoRandom01(slot + 89) * shrubVariants.length) % shrubVariants.length];
+          currentHp = shrubHpBySlot.has(slot) ? shrubHpBySlot.get(slot) : shrubMaxHpForMatrix(forageMatrix);
         } else {
-          shrubHpBySlot.set(slot, nextShrubHp);
+          continue;
+        }
+        if (currentHp <= 0) continue;
+        const forageX = slot * shrubObjectPeriod + shrubParallaxOffset;
+        const forageY = (rows - 2) - forageMatrix.length;
+        const localX = Math.floor(xTile - forageX);
+        const localY = Math.floor(yTile - forageY);
+        if (localX < 0 || localX >= forageMatrix[0].length || localY < 0 || localY >= forageMatrix.length) continue;
+        if (!forageMatrix[localY][localX]) continue;
+        if (isTermite) termiteRustleUntilBySlot.set(slot, performance.now() + 140);
+        else shrubRustleUntilBySlot.set(slot, performance.now() + 140);
+        const nextHp = currentHp - Math.ceil(baseBiteDamage());
+        if (nextHp <= 0) {
+          if (isTermite) {
+            termiteHpBySlot.set(slot, 0);
+            grantForagingXp(termiteXpRewardForMatrix(forageMatrix));
+          } else {
+            shrubHpBySlot.set(slot, 0);
+            grantRumenLiters(shrubRumenRewardForMatrix(forageMatrix));
+          }
+        } else if (isTermite) {
+          termiteHpBySlot.set(slot, nextHp);
+        } else {
+          shrubHpBySlot.set(slot, nextHp);
         }
         return;
       }
