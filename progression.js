@@ -1,6 +1,6 @@
 (() => {
   const LEVEL_XP_BASE = 100;
-  const LEVEL_XP_GROWTH_FACTOR = 1.75;
+  const LEVEL_XP_GROWTH_FACTOR = 1.65;
 
   const UPGRADE_PATHS = [
     {
@@ -59,6 +59,60 @@
       unit: '%',
       maxLevel: 1,
       unlockWhen: (levels) => (levels['quad-stomachs'] || 0) >= 2 && (levels['leg-day'] || 0) >= 3
+    },
+    {
+      id: 'wakanda-foragever',
+      name: 'Wakanda Foragever',
+      effectText: 'Unlock stealth coat, then vibranium bite reach',
+      perLevel: 1,
+      unit: 'x',
+      maxLevel: 2,
+      unlockWhen: (levels) => (levels['leg-day'] || 0) >= 1 && (levels['crits-r-us'] || 0) >= 1 && (levels['long-horse'] || 0) >= 1 && (levels['use-ur-noodle'] || 0) >= 1
+    },
+    {
+      id: 'lorax-tax',
+      name: 'Lorax Tax',
+      effectText: 'Gain bonus XP after clearing first 2 tree stages',
+      perLevel: 1,
+      unit: 'x',
+      maxLevel: 2,
+      unlockWhen: (levels) => (levels['molar-master'] || 0) >= 3 && (levels['crits-r-us'] || 0) >= 3
+    },
+    {
+      id: 'cud-storm',
+      name: 'CUD STORM',
+      effectText: 'During Rumination, rumen builds faster',
+      perLevel: 25,
+      unit: '%',
+      maxLevel: 2,
+      unlockWhen: (levels) => (levels['quad-stomachs'] || 0) >= 2 && (levels['crits-r-us'] || 0) >= 3
+    },
+    {
+      id: 'bless-the-rains',
+      name: 'Bless the Rains',
+      effectText: '1s after Rumination ends, visible forageables fully restore',
+      perLevel: 1,
+      unit: 'x',
+      maxLevel: 1,
+      unlockWhen: (levels) => (levels['molar-master'] || 0) >= 3 && (levels['use-ur-noodle'] || 0) >= 3
+    },
+    {
+      id: 'awkward-overbite',
+      name: 'Awkward Overbite',
+      effectText: 'Carry over up to 25%/50% of overflow bite damage to the next stage',
+      perLevel: 25,
+      unit: '%',
+      maxLevel: 2,
+      unlockWhen: (levels) => (levels['molar-master'] || 0) >= 3 && (levels['leg-day'] || 0) >= 3
+    },
+    {
+      id: 'safari-browser',
+      name: 'Safari Browser',
+      effectText: 'Dress to impress: safari hat, then sunglasses',
+      perLevel: 1,
+      unit: 'x',
+      maxLevel: 2,
+      unlockWhen: (levels) => (levels['long-horse'] || 0) >= 3 && (levels['leg-day'] || 0) >= 3
     },
     {
       id: 'lamarckable-effort',

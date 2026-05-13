@@ -95,6 +95,10 @@
         <option value="2">60cm</option>
         <option value="3">90cm</option>
       </select>
+      <label><input id="wakanda1" type="checkbox" /> Wakanda Foragever I</label>
+      <label><input id="wakanda2" type="checkbox" /> Wakanda Foragever II</label>
+      <label><input id="safari1" type="checkbox" /> Safari Browser I</label>
+      <label><input id="safari2" type="checkbox" /> Safari Browser II</label>
       <button id="toggle">Pause</button>
       <button id="walkRight">Walk Right</button>
       <button id="walkLeft">Walk Left</button>
@@ -252,6 +256,10 @@
     const treeStateInput = document.getElementById('treeState');
     const timeOfDayInput = document.getElementById('timeOfDay');
     const neckBoostInput = document.getElementById('neckBoost');
+    const wakanda1Input = document.getElementById('wakanda1');
+    const wakanda2Input = document.getElementById('wakanda2');
+    const safari1Input = document.getElementById('safari1');
+    const safari2Input = document.getElementById('safari2');
     const toggle = document.getElementById('toggle');
     const walkRightBtn = document.getElementById('walkRight');
     const walkLeftBtn = document.getElementById('walkLeft');
@@ -360,6 +368,7 @@
 
     const palette = {
       giraffe: {1: '#E2B24A', 2: '#8A4E1F'},
+      giraffeWakanda: {1: '#1A1A1A', 2: '#B5BCC7'},
       tree: {1: '#6C4A2D', 2: '#5A9E46'}
     };
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
@@ -544,6 +553,13 @@
     }
 
     const mirrorX = (matrix) => matrix.map((row) => [...row].reverse());
+    function trimTopEmptyRows(matrix) {
+      let firstNonEmpty = 0;
+      while (firstNonEmpty < matrix.length && matrix[firstNonEmpty].every((v) => v === 0)) {
+        firstNonEmpty += 1;
+      }
+      return firstNonEmpty > 0 ? matrix.slice(firstNonEmpty) : matrix;
+    }
     const treeVariantsMirrored = {
       full: mirrorX(treeFull),
       grazed: mirrorX(tree75),
@@ -567,6 +583,40 @@
       quarter: mirrorX(buildLevel3Stage(level3Base, 3)),
       depleted: mirrorX(buildLevel3Stage(level3Base, 4))
     };
+    const BAOBAB_30x30 = [
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0],[0,0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0],[0,0,0,0,0,2,2,2,2,2,2,2,0,0,0,0,0,0,2,2,2,2,2,2,2,0,0,0,0,0],
+      [0,0,0,0,2,2,2,2,2,1,2,2,2,0,0,0,0,2,2,2,1,2,2,2,2,2,0,0,0,0],[0,0,0,2,2,2,2,2,1,1,1,2,2,2,0,0,2,2,2,1,1,1,2,2,2,2,2,0,0,0],[0,0,0,2,2,2,2,1,1,1,1,1,2,2,2,2,2,2,1,1,1,1,1,2,2,2,2,0,0,0],
+      [0,0,0,0,2,2,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,2,2,0,0,0,0],[0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],[0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0]
+    ];
+    function buildLevel4Stage(level4Base, stageIndex) {
+      const out = cloneMatrix(level4Base);
+      if (stageIndex <= 0) return out;
+      for (let r = 0; r < out.length; r++) {
+        for (let c = 0; c < out[0].length; c++) {
+          if (!isLeafValue(out[r][c])) continue;
+          if (stageIndex >= 1 && c > 20) out[r][c] = 0;
+          else if (stageIndex >= 2 && c > 17) out[r][c] = 0;
+          else if (stageIndex >= 3 && c > 14) out[r][c] = 0;
+          else if (stageIndex >= 4) out[r][c] = 0;
+        }
+      }
+      return out;
+    }
+    const treeLevel4VariantsMirrored = {
+      full: trimTopEmptyRows(mirrorX(buildLevel4Stage(BAOBAB_30x30, 0))),
+      grazed: trimTopEmptyRows(mirrorX(buildLevel4Stage(BAOBAB_30x30, 1))),
+      half: trimTopEmptyRows(mirrorX(buildLevel4Stage(BAOBAB_30x30, 2))),
+      quarter: trimTopEmptyRows(mirrorX(buildLevel4Stage(BAOBAB_30x30, 3))),
+      depleted: trimTopEmptyRows(mirrorX(buildLevel4Stage(BAOBAB_30x30, 4)))
+    };
 
     let playing = true;
     let frame = 0;
@@ -575,8 +625,10 @@
     let movementMode = 'graze'; // graze | right | left
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
     const treeTierAtIndex = (k) => {
+      if (k === 0) return 4; // guarantee one visible level-4 tree for testing
       const normalized = ((k % 6) + 6) % 6;
-      if (normalized === 5) return 3;
+      if (normalized === 5) return 4;
+      if (normalized === 4) return 3;
       if (normalized === 3) return 2;
       return 1;
     };
@@ -655,6 +707,29 @@
       if (stage >= 4) return treeLevel3VariantsMirrored.depleted;
       return treeLevel3VariantsMirrored.full;
     }
+    function treeLevel4ForStage(stage) {
+      if (stage === 1) return treeLevel4VariantsMirrored.grazed;
+      if (stage === 2) return treeLevel4VariantsMirrored.half;
+      if (stage === 3) return treeLevel4VariantsMirrored.quarter;
+      if (stage >= 4) return treeLevel4VariantsMirrored.depleted;
+      return treeLevel4VariantsMirrored.full;
+    }
+    const LEVEL4_STRETCH_X = 1.5;
+    const LEVEL4_STRETCH_Y = 2.52;
+    function level4TopYForBaseline(treeY, matrix) {
+      const baselineY = treeY + treeVariantsMirrored.full.length - 1 - 7;
+      return baselineY - Math.ceil(matrix.length * LEVEL4_STRETCH_Y) + 1;
+    }
+    function drawLevel4TreeStretched(matrix, xOff, topY, scale, colors, stretchX = LEVEL4_STRETCH_X, stretchY = LEVEL4_STRETCH_Y) {
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+          const v = matrix[r][c];
+          if (!v) continue;
+          ctx.fillStyle = colors[v];
+          ctx.fillRect((xOff + c * stretchX) * scale, (topY + r * stretchY) * scale, scale * stretchX, scale * stretchY);
+        }
+      }
+    }
 
     function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, flipHorizontal = false) {
       const width = matrix[0].length * scale;
@@ -681,6 +756,44 @@
         }
       }
       ctx.restore();
+    }
+
+    function drawSafariAccessories(giraffeMatrix, giraffeX, giraffeY, scale, facingLeft = false) {
+      const safariLevel = safari2Input.checked ? 2 : (safari1Input.checked ? 1 : 0);
+      if (safariLevel <= 0) return;
+      const wakandaLevel = wakanda2Input.checked ? 2 : (wakanda1Input.checked ? 1 : 0);
+      const glassesColor = wakandaLevel >= 1 ? '#B5BCC7' : '#121212';
+      let minX = Infinity;
+      let maxX = -1;
+      let minY = Infinity;
+      for (let r = 0; r <= Math.min(12, giraffeMatrix.length - 1); r++) {
+        for (let c = 14; c <= Math.min(23, giraffeMatrix[0].length - 1); c++) {
+          if (!giraffeMatrix[r][c]) continue;
+          minX = Math.min(minX, c);
+          maxX = Math.max(maxX, c);
+          minY = Math.min(minY, r);
+        }
+      }
+      if (maxX === -1) return;
+      const mapX = (localX) => facingLeft
+        ? (giraffeX + giraffeMatrix[0].length - 1 - localX)
+        : (giraffeX + localX);
+      const brimStart = minX;
+      const brimEnd = maxX + 1;
+      for (let dx = brimStart; dx <= brimEnd; dx++) {
+        ctx.fillStyle = '#B99347';
+        ctx.fillRect(mapX(dx) * scale, (giraffeY + minY + 1) * scale, scale, scale);
+      }
+      for (let dx = brimStart + 1; dx <= brimEnd - 1; dx++) {
+        ctx.fillStyle = '#C8A55B';
+        ctx.fillRect(mapX(dx) * scale, (giraffeY + minY) * scale, scale, scale);
+      }
+      if (safariLevel >= 2) {
+        for (let dx = brimStart + 1; dx <= brimEnd - 1; dx++) {
+          ctx.fillStyle = glassesColor;
+          ctx.fillRect(mapX(dx) * scale, (giraffeY + minY + 3) * scale, scale, scale);
+        }
+      }
     }
 
     function render(ts) {
@@ -718,7 +831,10 @@
       for (let k = kStart; k <= kEnd; k++) {
         const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
         const tier = treeTierAtIndex(k);
-        if (tier === 3) {
+        if (tier === 4) {
+          const tree = treeLevel4ForStage(stage);
+          drawLevel4TreeStretched(tree, baseTreeX + k * tilePeriod - 4, level4TopYForBaseline(treeY, tree), scale, treePaletteLevel3);
+        } else if (tier === 3) {
           const tree = treeLevel3ForStage(stage);
           drawMatrix(tree, baseTreeX + k * tilePeriod - 4, treeY - 16, scale, treePaletteLevel3);
         } else if (tier === 2) {
@@ -729,9 +845,26 @@
           drawMatrix(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree);
         }
       }
-
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
-      drawMatrixTransformed(neckAdjusted.matrix, 10, 20 + neckAdjusted.yAdjust, scale, palette.giraffe, movementMode === 'left');
+      const giraffeY = 20 + neckAdjusted.yAdjust;
+      const wakandaLevel = wakanda2Input.checked ? 2 : (wakanda1Input.checked ? 1 : 0);
+      if (wakandaLevel >= 2) {
+        const glowX = (13 + Math.floor(giraffe[0].length / 2)) * scale;
+        const glowY = (giraffeY + 2 + Math.floor(neckAdjusted.matrix.length / 2)) * scale;
+        const glowRadius = Math.max(16, Math.floor(scale * 13));
+        const glow = ctx.createRadialGradient(glowX, glowY, Math.floor(glowRadius * 0.2), glowX, glowY, glowRadius);
+        glow.addColorStop(0, 'rgba(118, 122, 255, 0.45)');
+        glow.addColorStop(1, 'rgba(118, 122, 255, 0)');
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(glowX, glowY, glowRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      drawMatrixTransformed(neckAdjusted.matrix, 10, giraffeY, scale, wakandaLevel >= 1 ? palette.giraffeWakanda : palette.giraffe, movementMode === 'left');
+      drawSafariAccessories(neckAdjusted.matrix, 10, giraffeY, scale, movementMode === 'left');
 
       requestAnimationFrame(render);
     }
@@ -765,48 +898,72 @@
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
       const treeY = 24;
-      const k = Math.floor((xTile - baseTreeX) / tilePeriod);
-      const tier = treeTierAtIndex(k);
-      const treeX = baseTreeX + k * tilePeriod + (tier === 3 ? -4 : tier === 2 ? -3 : 0);
-      const effectiveTreeY = treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
-      const localX = Math.floor(xTile - treeX);
-      const localY = Math.floor(yTile - effectiveTreeY);
-
+      const kCenter = Math.floor((xTile - baseTreeX) / tilePeriod);
       const baseStage = baseTreeStage();
-      const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
-      const currentTree =
-        tier === 3 ? treeLevel3ForStage(currentStage) :
-        tier === 2 ? treeLevel2ForStage(currentStage) :
-        treeForStage(currentStage);
+      const neckLevel = Number(neckBoostInput.value) || 0;
+      let target = null;
 
-      if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) return;
+      for (let dk = -2; dk <= 2; dk++) {
+        const k = kCenter + dk;
+        const tier = treeTierAtIndex(k);
+        if (tier === 4 && neckLevel < 3) continue;
 
-      // Green foliage tiles are primary click targets.
-      // For sparse stages, allow clicks anywhere inside the remaining canopy bounds.
-      let minX = Infinity;
-      let maxX = -1;
-      let minY = Infinity;
-      let maxY = -1;
-      for (let r = 0; r < currentTree.length; r++) {
-        for (let c = 0; c < currentTree[0].length; c++) {
-          if (isLeafValue(currentTree[r][c])) {
-            minX = Math.min(minX, c);
-            maxX = Math.max(maxX, c);
-            minY = Math.min(minY, r);
-            maxY = Math.max(maxY, r);
+        const currentStage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
+        const currentTree =
+          tier === 4 ? treeLevel4ForStage(currentStage) :
+          tier === 3 ? treeLevel3ForStage(currentStage) :
+          tier === 2 ? treeLevel2ForStage(currentStage) :
+          treeForStage(currentStage);
+
+        const treeX = baseTreeX + k * tilePeriod + (tier >= 3 ? -4 : tier === 2 ? -3 : 0);
+        const effectiveTreeY = tier === 4
+          ? level4TopYForBaseline(treeY, currentTree)
+          : treeY + (tier === 3 ? -16 : tier === 2 ? -10 : 0);
+
+        let localX = Math.floor(xTile - treeX);
+        let localY = Math.floor(yTile - effectiveTreeY);
+        if (tier === 4) {
+          localX = Math.floor(localX / LEVEL4_STRETCH_X);
+          localY = Math.floor(localY / LEVEL4_STRETCH_Y);
+        }
+        if (localX < 0 || localX >= currentTree[0].length || localY < 0 || localY >= currentTree.length) continue;
+
+        let minX = Infinity;
+        let maxX = -1;
+        let minY = Infinity;
+        let maxY = -1;
+        for (let r = 0; r < currentTree.length; r++) {
+          for (let c = 0; c < currentTree[0].length; c++) {
+            if (isLeafValue(currentTree[r][c])) {
+              minX = Math.min(minX, c);
+              maxX = Math.max(maxX, c);
+              minY = Math.min(minY, r);
+              maxY = Math.max(maxY, r);
+            }
           }
+        }
+        if (maxX === -1) continue;
+
+        const hitLeaf = isLeafValue(currentTree[localY][localX]);
+        const hitCanopyBounds =
+          localX >= minX && localX <= maxX &&
+          localY >= minY && localY <= maxY;
+        if (!hitLeaf && !hitCanopyBounds) continue;
+
+        const treeCenterX = treeX + ((tier === 4 ? currentTree[0].length * LEVEL4_STRETCH_X : currentTree[0].length) / 2);
+        const treeCenterY = effectiveTreeY + ((tier === 4 ? currentTree.length * LEVEL4_STRETCH_Y : currentTree.length) / 2);
+        const dx = xTile - treeCenterX;
+        const dy = yTile - treeCenterY;
+        const distance = dx * dx + dy * dy;
+
+        if (!target || distance < target.distance) {
+          target = { k, currentStage, distance };
         }
       }
 
-      if (maxX === -1) return; // already depleted
-      const hitLeaf = isLeafValue(currentTree[localY][localX]);
-      const hitCanopyBounds =
-        localX >= minX && localX <= maxX &&
-        localY >= minY && localY <= maxY;
-      if (!hitLeaf && !hitCanopyBounds) return;
-
-      const nextStage = Math.min(4, currentStage + 1);
-      treeStageById.set(k, nextStage);
+      if (!target) return;
+      const nextStage = Math.min(4, target.currentStage + 1);
+      treeStageById.set(target.k, nextStage);
     });
 
     applySkyForTimeOfDay();
