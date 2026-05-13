@@ -676,6 +676,7 @@
     const termiteHpBySlot = new Map(); // slot -> hp remaining
     const termiteRustleUntilBySlot = new Map(); // slot -> rustle end timestamp
     const rockHpBySlot = new Map(); // slot -> hp remaining
+    const rockFlashUntilBySlot = new Map(); // slot -> hit flash end timestamp
     const treeRustleUntilById = new Map(); // k -> timestamp(ms) when rustle ends
     const pendingAdvanceById = new Map(); // k -> {at, nextStage, prevStage, tier}
     let xp = 0;
@@ -707,6 +708,7 @@
     const TREE_INTERACT_RANGE_X = 18;
     const RUSTLE_MS = 220;
     const ADVANCE_DELAY_AFTER_RUSTLE_MS = 100;
+    const ROCK_HIT_FLASH_MS = 120;
     function slotSeed(k) {
       const x = Math.sin((k + 1) * 12.9898) * 43758.5453;
       return x - Math.floor(x);
@@ -835,8 +837,8 @@
     function drawForegroundObjects(cols, rows, scale) {
       const objectPeriod = 44;
       const parallaxOffset = treeOffset * 1.12;
-      const slotStart = Math.floor((-parallaxOffset) / objectPeriod) - 2;
-      const slotCount = Math.ceil(cols / objectPeriod) + 5;
+      const slotStart = Math.floor((-parallaxOffset) / objectPeriod) - 4;
+      const slotCount = Math.ceil(cols / objectPeriod) + 9;
       for (let i = 0; i < slotCount; i++) {
         const slot = slotStart + i;
         if (pseudoRandom01(slot + 17) > 0.34) continue;
@@ -867,6 +869,19 @@
         const x = worldX + parallaxOffset + rustleX;
         const bottomY = rows - 2;
         const y = bottomY - matrix.length;
+        if (typeRoll >= 0.8) {
+          const flashUntil = rockFlashUntilBySlot.get(slot) || 0;
+          const flashRemaining = flashUntil - performance.now();
+          if (flashRemaining > 0) {
+            const t = flashRemaining / ROCK_HIT_FLASH_MS;
+            const alpha = 0.32 + (0.68 * Math.abs(Math.sin((1 - t) * Math.PI)));
+            ctx.save();
+            ctx.globalAlpha = Math.max(0.2, Math.min(1, alpha));
+            drawMatrix(matrix, x, y, scale, colors);
+            ctx.restore();
+            continue;
+          }
+        }
         drawMatrix(matrix, x, y, scale, colors);
       }
     }
@@ -879,10 +894,12 @@
       ctx.textBaseline = 'top';
       ctx.fillText(`LVL ${level} | XP ${xp}/${nextLevelXp(level)}`, scene.width - 10, 8);
       if (stoneEverEarned) {
-        const iconX = scene.width - 120;
-        const iconY = 26;
-        drawMatrix(rockStatic, iconX / Math.max(1, Math.min(18, SIM_SCALE)), iconY / Math.max(1, Math.min(18, SIM_SCALE)), Math.max(1, Math.min(18, SIM_SCALE)), rockPalette);
-        ctx.fillStyle = '#FF9F1C';
+        const hudScale = Math.max(1, Math.min(18, SIM_SCALE));
+        const iconScale = Math.max(1, hudScale - 1);
+        const iconX = scene.width - 70;
+        const iconY = 27;
+        drawMatrix(rockStatic, iconX / iconScale, iconY / iconScale, iconScale, rockPalette);
+        ctx.fillStyle = '#E86A24';
         ctx.font = 'bold 12px Inter, system-ui, sans-serif';
         ctx.fillText(`${stoneInventory}`, scene.width - 12, 28);
       }
@@ -1532,7 +1549,8 @@
         if (localX < 0 || localX >= forageMatrix[0].length || localY < 0 || localY >= forageMatrix.length) continue;
         if (!forageMatrix[localY][localX]) continue;
         if (isTermite) termiteRustleUntilBySlot.set(slot, performance.now() + 140);
-        else if (!isRock) shrubRustleUntilBySlot.set(slot, performance.now() + 140);
+        else if (isRock) rockFlashUntilBySlot.set(slot, performance.now() + ROCK_HIT_FLASH_MS);
+        else shrubRustleUntilBySlot.set(slot, performance.now() + 140);
         const nextHp = currentHp - Math.ceil(baseBiteDamage());
         if (nextHp <= 0) {
           if (isTermite) {
