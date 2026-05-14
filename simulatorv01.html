@@ -1332,8 +1332,8 @@
       const cols = 70;
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
-      const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
-      const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
+      const kStart = Math.floor((-(tilePeriod * 2) - baseTreeX) / tilePeriod);
+      const kEnd = Math.ceil((cols + tilePeriod * 2 - baseTreeX) / tilePeriod);
       for (let k = kStart; k <= kEnd; k++) {
         if (!slotHasTree(k)) continue;
         treeStageById.set(k, 0);
@@ -1414,8 +1414,8 @@
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
       drawClouds(cols, scale);
-      const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
-      const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
+      const kStart = Math.floor((-(tilePeriod * 2) - baseTreeX) / tilePeriod);
+      const kEnd = Math.ceil((cols + tilePeriod * 2 - baseTreeX) / tilePeriod);
       for (let k = kStart; k <= kEnd; k++) {
         if (!slotHasTree(k)) continue;
         const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
