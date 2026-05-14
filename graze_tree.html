@@ -948,9 +948,11 @@
       const hudScale = Math.max(1, scale - 1);
       const iconX = (scene.width - 72) / hudScale;
       const iconY = 26 / hudScale;
+      const iconHitPaddingX = 2.5;
+      const iconHitPaddingY = 2.5;
       if (
-        xTile >= iconX && xTile < iconX + rockStatic[0].length &&
-        yTile >= iconY && yTile < iconY + rockStatic.length
+        xTile >= iconX - iconHitPaddingX && xTile < iconX + rockStatic[0].length + iconHitPaddingX &&
+        yTile >= iconY - iconHitPaddingY && yTile < iconY + rockStatic.length + iconHitPaddingY
       ) {
         stoneSelected = !stoneSelected;
         return;
