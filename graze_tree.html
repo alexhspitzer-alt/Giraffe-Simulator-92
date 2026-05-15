@@ -374,6 +374,7 @@
     const treePaletteLevel2 = {1: '#6C4A2D', 2: '#2E7628'};
     const treePaletteLevel3 = {1: '#6C4A2D', 2: '#2E8A35', 3: '#45A84A', 4: '#69BF63'};
     const cloudPalette = {1: 'rgba(232, 242, 255, 0.3)', 2: 'rgba(255, 255, 255, 0.22)'};
+    const rockPalette = {6: '#8E8E92', 7: '#B1B1B5'};
     const skyByTime = {
       dawn: 'linear-gradient(#5f6fb3, #d68d79 66%, #486f42 66%, #486f42)',
       noon: 'linear-gradient(#2f78cf, #71b7f3 66%, #4c8447 66%, #4c8447)',
@@ -624,6 +625,9 @@
     let treeOffset = 0;
     let movementMode = 'graze'; // graze | right | left
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
+    let stoneInventory = 99;
+    let stoneSelected = false;
+    let slingshotFx = null; // {startedAt, chargeUntil, launchUntil, startX, startY, targetX, targetY}
     const treeTierAtIndex = (k) => {
       if (k === 0) return 4; // guarantee one visible level-4 tree for testing
       const normalized = ((k % 6) + 6) % 6;
@@ -669,6 +673,76 @@
         drawMatrix(cloudSprite, baseCloudX + k * cloudTilePeriod, y, scale, cloudPalette);
       }
       ctx.restore();
+    }
+
+    const rockStatic = [
+      [0,0,6,6,0],
+      [0,6,7,7,6],
+      [6,7,7,7,7],
+      [0,6,7,7,6],
+      [0,0,6,6,0]
+    ];
+
+    function drawStoneHud(scale) {
+      const hudScale = Math.max(1, scale - 1);
+      const iconX = scene.width - 72;
+      const iconY = 26;
+      if (stoneSelected) {
+        const w = rockStatic[0].length * hudScale + 6;
+        const h = rockStatic.length * hudScale + 6;
+        ctx.save();
+        ctx.strokeStyle = '#D9AE3B';
+        ctx.lineWidth = Math.max(2, Math.floor(hudScale / 2));
+        ctx.strokeRect(iconX - 3, iconY - 3, w, h);
+        ctx.restore();
+      }
+      drawMatrix(rockStatic, iconX / hudScale, iconY / hudScale, hudScale, rockPalette);
+      ctx.save();
+      ctx.fillStyle = '#E86A24';
+      ctx.font = 'bold 12px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`${stoneInventory}`, scene.width - 12, 28);
+      ctx.restore();
+    }
+
+    function stoneHudHitRect(scale) {
+      const hudScale = Math.max(1, scale - 1);
+      const iconX = (scene.width - 72) / hudScale;
+      const iconY = 26 / hudScale;
+      const textRightX = scene.width / scale;
+      const textLeftX = textRightX - 14;
+      const minX = Math.min(iconX, textLeftX) - 1.5;
+      const maxX = Math.max(iconX + rockStatic[0].length, textRightX) + 1.5;
+      const minY = iconY - 1.5;
+      const maxY = iconY + rockStatic.length + 1.5;
+      return { minX, maxX, minY, maxY };
+    }
+
+    function drawSlingshotFx(ts, scale) {
+      if (!slingshotFx) return { x: 0, y: 0 };
+      if (ts >= slingshotFx.launchUntil) {
+        slingshotFx = null;
+        return { x: 0, y: 0 };
+      }
+      const neckShift = { x: 0, y: 0 };
+      if (ts < slingshotFx.chargeUntil) {
+        const chargeT = Math.max(0, Math.min(1, (ts - slingshotFx.startedAt) / Math.max(1, slingshotFx.chargeUntil - slingshotFx.startedAt)));
+        neckShift.x = -1.2 * chargeT;
+        neckShift.y = 0.8 * chargeT;
+      } else {
+        const launchT = Math.max(0, Math.min(1, (ts - slingshotFx.chargeUntil) / Math.max(1, slingshotFx.launchUntil - slingshotFx.chargeUntil)));
+        const eased = launchT * launchT;
+        const rockX = slingshotFx.startX + (slingshotFx.targetX - slingshotFx.startX) * eased;
+        const rockY = slingshotFx.startY + (slingshotFx.targetY - slingshotFx.startY) * eased - (1 - eased) * 3;
+        const spin = eased * Math.PI * 3;
+        ctx.save();
+        ctx.translate(rockX * scale, rockY * scale);
+        ctx.rotate(spin);
+        drawMatrix(rockStatic, -2.5, -2.5, scale * 0.5, rockPalette);
+        ctx.restore();
+      }
+      return neckShift;
     }
 
     function applySkyForTimeOfDay() {
@@ -729,6 +803,28 @@
           ctx.fillRect((xOff + c * stretchX) * scale, (topY + r * stretchY) * scale, scale * stretchX, scale * stretchY);
         }
       }
+      // Edge dithering pass for smoother baobab silhouette (without changing stretch).
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+          if (!isLeafValue(matrix[r][c])) continue;
+          const leftEmpty = c === 0 || !isLeafValue(matrix[r][c - 1]);
+          const rightEmpty = c === matrix[0].length - 1 || !isLeafValue(matrix[r][c + 1]);
+          const topEmpty = r === 0 || !isLeafValue(matrix[r - 1][c]);
+          const bottomEmpty = r === matrix.length - 1 || !isLeafValue(matrix[r + 1][c]);
+          if (!leftEmpty && !rightEmpty && !topEmpty && !bottomEmpty) continue;
+          const parity = (r + c) % 2;
+          ctx.fillStyle = parity === 0 ? colors[4] : colors[3];
+          const px = (xOff + c * stretchX) * scale;
+          const py = (topY + r * stretchY) * scale;
+          if (leftEmpty && parity === 0) ctx.fillRect(px - scale * 0.2, py + scale * 0.35, scale * 0.22, scale * 0.38);
+          if (rightEmpty && parity === 1) ctx.fillRect(px + scale * stretchX - scale * 0.02, py + scale * 0.35, scale * 0.22, scale * 0.38);
+          if (topEmpty) ctx.fillRect(px + scale * 0.38, py - scale * 0.12, scale * 0.32, scale * 0.18);
+          if (bottomEmpty && parity === 0) ctx.fillRect(px + scale * 0.34, py + scale * stretchY - scale * 0.06, scale * 0.3, scale * 0.16);
+        }
+      }
+      ctx.restore();
     }
 
     function drawMatrixTransformed(matrix, xOff, yOff, scale, colors, flipHorizontal = false) {
@@ -826,8 +922,8 @@
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
       drawClouds(cols, scale);
-      const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
-      const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
+      const kStart = Math.floor((-(tilePeriod * 2) - baseTreeX) / tilePeriod);
+      const kEnd = Math.ceil((cols + tilePeriod * 2 - baseTreeX) / tilePeriod);
       for (let k = kStart; k <= kEnd; k++) {
         const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
         const tier = treeTierAtIndex(k);
@@ -846,10 +942,14 @@
         }
       }
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
-      const giraffeY = 20 + neckAdjusted.yAdjust;
+      const neckShift = drawSlingshotFx(ts, scale);
+      const giraffeY = 20 + neckAdjusted.yAdjust + neckShift.y;
       const wakandaLevel = wakanda2Input.checked ? 2 : (wakanda1Input.checked ? 1 : 0);
+      const facingLeft = movementMode === 'left';
       if (wakandaLevel >= 2) {
-        const glowX = (13 + Math.floor(giraffe[0].length / 2)) * scale;
+        const centerX = 13 + Math.floor(giraffe[0].length / 2);
+        const mirroredCenterX = 10 + (giraffe[0].length - (centerX - 10));
+        const glowX = ((facingLeft ? mirroredCenterX : centerX) + neckShift.x) * scale;
         const glowY = (giraffeY + 2 + Math.floor(neckAdjusted.matrix.length / 2)) * scale;
         const glowRadius = Math.max(16, Math.floor(scale * 13));
         const glow = ctx.createRadialGradient(glowX, glowY, Math.floor(glowRadius * 0.2), glowX, glowY, glowRadius);
@@ -863,8 +963,27 @@
         ctx.fill();
         ctx.restore();
       }
-      drawMatrixTransformed(neckAdjusted.matrix, 10, giraffeY, scale, wakandaLevel >= 1 ? palette.giraffeWakanda : palette.giraffe, movementMode === 'left');
-      drawSafariAccessories(neckAdjusted.matrix, 10, giraffeY, scale, movementMode === 'left');
+      if (stoneSelected) {
+        const stoneAnchorX = 10 + 18;
+        const mirroredStoneX = 10 + (giraffe[0].length - (stoneAnchorX - 10));
+        const glowX = ((facingLeft ? mirroredStoneX : stoneAnchorX) + neckShift.x) * scale;
+        const glowY = (giraffeY + 5) * scale;
+        const glowRadius = Math.max(16, Math.floor(scale * 10));
+        const pulse = 0.35 + 0.25 * Math.sin(ts / 80);
+        const glow = ctx.createRadialGradient(glowX, glowY, Math.floor(glowRadius * 0.15), glowX, glowY, glowRadius);
+        glow.addColorStop(0, `rgba(255, 42, 42, ${pulse.toFixed(3)})`);
+        glow.addColorStop(1, 'rgba(255, 42, 42, 0)');
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(glowX, glowY, glowRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      drawMatrixTransformed(neckAdjusted.matrix, 10 + neckShift.x, giraffeY, scale, wakandaLevel >= 1 ? palette.giraffeWakanda : palette.giraffe, movementMode === 'left');
+      drawSafariAccessories(neckAdjusted.matrix, 10 + neckShift.x, giraffeY, scale, movementMode === 'left');
+      drawStoneHud(scale);
 
       requestAnimationFrame(render);
     }
@@ -894,6 +1013,14 @@
       const rect = scene.getBoundingClientRect();
       const xTile = (event.clientX - rect.left) / scale;
       const yTile = (event.clientY - rect.top) / scale;
+      const stoneHudRect = stoneHudHitRect(scale);
+      if (
+        xTile >= stoneHudRect.minX && xTile < stoneHudRect.maxX &&
+        yTile >= stoneHudRect.minY && yTile < stoneHudRect.maxY
+      ) {
+        stoneSelected = !stoneSelected;
+        return;
+      }
 
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
@@ -957,11 +1084,32 @@
         const distance = dx * dx + dy * dy;
 
         if (!target || distance < target.distance) {
-          target = { k, currentStage, distance };
+          target = { k, tier, treeX, currentStage, distance };
         }
       }
 
       if (!target) return;
+      if (stoneSelected && stoneInventory > 0) {
+        const targetTree =
+          target.tier === 4 ? treeLevel4ForStage(target.currentStage) :
+          target.tier === 3 ? treeLevel3ForStage(target.currentStage) :
+          target.tier === 2 ? treeLevel2ForStage(target.currentStage) :
+          treeForStage(target.currentStage);
+        const targetTreeY = target.tier === 4
+          ? level4TopYForBaseline(treeY, targetTree)
+          : treeY + (target.tier === 3 ? -16 : target.tier === 2 ? -10 : 0);
+        slingshotFx = {
+          startedAt: performance.now(),
+          chargeUntil: performance.now() + 130,
+          launchUntil: performance.now() + 330,
+          startX: 26,
+          startY: 24,
+          targetX: target.treeX + (target.tier === 4 ? targetTree[0].length * LEVEL4_STRETCH_X : targetTree[0].length) / 2,
+          targetY: targetTreeY + (target.tier === 4 ? targetTree.length * LEVEL4_STRETCH_Y : targetTree.length) / 2
+        };
+        stoneInventory = Math.max(0, stoneInventory - 1);
+        stoneSelected = false;
+      }
       const nextStage = Math.min(4, target.currentStage + 1);
       treeStageById.set(target.k, nextStage);
     });

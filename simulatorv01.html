@@ -676,6 +676,7 @@
     const termiteHpBySlot = new Map(); // slot -> hp remaining
     const termiteRustleUntilBySlot = new Map(); // slot -> rustle end timestamp
     const rockHpBySlot = new Map(); // slot -> hp remaining
+    const rockFlashUntilBySlot = new Map(); // slot -> hit flash end timestamp
     const treeRustleUntilById = new Map(); // k -> timestamp(ms) when rustle ends
     const pendingAdvanceById = new Map(); // k -> {at, nextStage, prevStage, tier}
     let xp = 0;
@@ -693,6 +694,8 @@
     let treeProgressBaseRemainder = 0;
     let stoneInventory = 0;
     let stoneEverEarned = false;
+    let stoneSelected = false;
+    let slingshotFx = null; // {startedAt, chargeUntil, launchUntil, startX, startY, targetX, targetY}
     const RUMEN_MAX_LITERS = 50;
     const RUMEN_GOLD_THRESHOLD_LITERS = 30;
     const TURBO_SPEED_MULTIPLIER = 2;
@@ -707,6 +710,7 @@
     const TREE_INTERACT_RANGE_X = 18;
     const RUSTLE_MS = 220;
     const ADVANCE_DELAY_AFTER_RUSTLE_MS = 100;
+    const ROCK_HIT_FLASH_MS = 120;
     function slotSeed(k) {
       const x = Math.sin((k + 1) * 12.9898) * 43758.5453;
       return x - Math.floor(x);
@@ -835,8 +839,8 @@
     function drawForegroundObjects(cols, rows, scale) {
       const objectPeriod = 44;
       const parallaxOffset = treeOffset * 1.12;
-      const slotStart = Math.floor((-parallaxOffset) / objectPeriod) - 2;
-      const slotCount = Math.ceil(cols / objectPeriod) + 5;
+      const slotStart = Math.floor((-parallaxOffset) / objectPeriod) - 4;
+      const slotCount = Math.ceil(cols / objectPeriod) + 9;
       for (let i = 0; i < slotCount; i++) {
         const slot = slotStart + i;
         if (pseudoRandom01(slot + 17) > 0.34) continue;
@@ -867,6 +871,19 @@
         const x = worldX + parallaxOffset + rustleX;
         const bottomY = rows - 2;
         const y = bottomY - matrix.length;
+        if (typeRoll >= 0.8) {
+          const flashUntil = rockFlashUntilBySlot.get(slot) || 0;
+          const flashRemaining = flashUntil - performance.now();
+          if (flashRemaining > 0) {
+            const t = flashRemaining / ROCK_HIT_FLASH_MS;
+            const alpha = 0.32 + (0.68 * Math.abs(Math.sin((1 - t) * Math.PI)));
+            ctx.save();
+            ctx.globalAlpha = Math.max(0.2, Math.min(1, alpha));
+            drawMatrix(matrix, x, y, scale, colors);
+            ctx.restore();
+            continue;
+          }
+        }
         drawMatrix(matrix, x, y, scale, colors);
       }
     }
@@ -879,14 +896,48 @@
       ctx.textBaseline = 'top';
       ctx.fillText(`LVL ${level} | XP ${xp}/${nextLevelXp(level)}`, scene.width - 10, 8);
       if (stoneEverEarned) {
-        const iconX = scene.width - 120;
-        const iconY = 26;
-        drawMatrix(rockStatic, iconX / Math.max(1, Math.min(18, SIM_SCALE)), iconY / Math.max(1, Math.min(18, SIM_SCALE)), Math.max(1, Math.min(18, SIM_SCALE)), rockPalette);
-        ctx.fillStyle = '#FF9F1C';
+        const hudScale = Math.max(1, Math.min(18, SIM_SCALE));
+        const iconScale = Math.max(1, hudScale - 1);
+        const iconX = scene.width - 70;
+        const iconY = 27;
+        if (stoneSelected) {
+          ctx.strokeStyle = '#D9AE3B';
+          ctx.lineWidth = Math.max(2, Math.floor(iconScale / 2));
+          ctx.strokeRect(iconX - 3, iconY - 3, rockStatic[0].length * iconScale + 6, rockStatic.length * iconScale + 6);
+        }
+        drawMatrix(rockStatic, iconX / iconScale, iconY / iconScale, iconScale, rockPalette);
+        ctx.fillStyle = '#E86A24';
         ctx.font = 'bold 12px Inter, system-ui, sans-serif';
         ctx.fillText(`${stoneInventory}`, scene.width - 12, 28);
       }
       ctx.restore();
+    }
+    function drawSlingshotFx(ts, scale) {
+      if (!slingshotFx) return { x: 0, y: 0 };
+      if (ts >= slingshotFx.launchUntil) {
+        slingshotFx = null;
+        return { x: 0, y: 0 };
+      }
+      const neckShift = { x: 0, y: 0 };
+      if (ts < slingshotFx.chargeUntil) {
+        const chargeT = Math.max(0, Math.min(1, (ts - slingshotFx.startedAt) / Math.max(1, slingshotFx.chargeUntil - slingshotFx.startedAt)));
+        neckShift.x = -1.2 * chargeT;
+        neckShift.y = 0.8 * chargeT;
+      } else {
+        const launchT = Math.max(0, Math.min(1, (ts - slingshotFx.chargeUntil) / Math.max(1, slingshotFx.launchUntil - slingshotFx.chargeUntil)));
+        const eased = launchT * launchT;
+        const rockX = slingshotFx.startX + (slingshotFx.targetX - slingshotFx.startX) * eased;
+        const rockY = slingshotFx.startY + (slingshotFx.targetY - slingshotFx.startY) * eased - (1 - eased) * 3;
+        const spin = eased * Math.PI * 3;
+        const tx = rockX * scale;
+        const ty = rockY * scale;
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.rotate(spin);
+        drawMatrix(rockStatic, -2.5, -2.5, scale * 0.5, rockPalette);
+        ctx.restore();
+      }
+      return neckShift;
     }
     function drawChompFx(ts) {
       if (!chompFx || ts >= chompFx.until) {
@@ -1315,8 +1366,8 @@
       const cols = 70;
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
-      const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
-      const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
+      const kStart = Math.floor((-(tilePeriod * 2) - baseTreeX) / tilePeriod);
+      const kEnd = Math.ceil((cols + tilePeriod * 2 - baseTreeX) / tilePeriod);
       for (let k = kStart; k <= kEnd; k++) {
         if (!slotHasTree(k)) continue;
         treeStageById.set(k, 0);
@@ -1397,8 +1448,8 @@
       const tilePeriod = treeVariantsMirrored.full[0].length;
       const baseTreeX = 42 + treeOffset;
       drawClouds(cols, scale);
-      const kStart = Math.floor((-(tilePeriod) - baseTreeX) / tilePeriod);
-      const kEnd = Math.ceil((cols + tilePeriod - baseTreeX) / tilePeriod);
+      const kStart = Math.floor((-(tilePeriod * 2) - baseTreeX) / tilePeriod);
+      const kEnd = Math.ceil((cols + tilePeriod * 2 - baseTreeX) / tilePeriod);
       for (let k = kStart; k <= kEnd; k++) {
         if (!slotHasTree(k)) continue;
         const stage = treeStageById.has(k) ? treeStageById.get(k) : baseStage;
@@ -1421,7 +1472,8 @@
       }
       const neckLevel = playerUpgradeLevels['long-horse'] || 0;
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
-      const giraffeY = 20 + neckAdjusted.yAdjust;
+      const neckShift = drawSlingshotFx(ts, scale);
+      const giraffeY = 20 + neckAdjusted.yAdjust + neckShift.y;
       if (wakandaForageverLevel() >= 2) {
         const glowX = (13 + Math.floor(GIRAFFE_W / 2)) * scale;
         const glowY = (giraffeY + 2 + Math.floor(neckAdjusted.matrix.length / 2)) * scale;
@@ -1437,8 +1489,8 @@
         ctx.fill();
         ctx.restore();
       }
-      drawMatrixTransformed(neckAdjusted.matrix, 10, giraffeY, scale, activeGiraffePalette(), movementMode === 'left');
-      drawSafariAccessories(neckAdjusted.matrix, 10, giraffeY, scale, movementMode === 'left');
+      drawMatrixTransformed(neckAdjusted.matrix, 10 + neckShift.x, giraffeY, scale, activeGiraffePalette(), movementMode === 'left');
+      drawSafariAccessories(neckAdjusted.matrix, 10 + neckShift.x, giraffeY, scale, movementMode === 'left');
       drawForegroundObjects(cols, rows, scale);
       drawXpHud();
       drawChompFx(ts);
@@ -1499,6 +1551,16 @@
       const rect = scene.getBoundingClientRect();
       const xTile = (event.clientX - rect.left) / scale;
       const yTile = (event.clientY - rect.top) / scale;
+      if (stoneEverEarned) {
+        const iconScale = Math.max(1, scale - 1);
+        const iconX = (scene.width - 70) / iconScale;
+        const iconY = 27 / iconScale;
+        const pad = 2.5;
+        if (xTile >= iconX - pad && xTile < iconX + rockStatic[0].length + pad && yTile >= iconY - pad && yTile < iconY + rockStatic.length + pad) {
+          stoneSelected = !stoneSelected;
+          return;
+        }
+      }
       const cols = 70;
       const rows = 54;
       const shrubObjectPeriod = 44;
@@ -1531,8 +1593,22 @@
         const localY = Math.floor(yTile - forageY);
         if (localX < 0 || localX >= forageMatrix[0].length || localY < 0 || localY >= forageMatrix.length) continue;
         if (!forageMatrix[localY][localX]) continue;
+        if (stoneSelected && stoneInventory > 0) {
+          slingshotFx = {
+            startedAt: performance.now(),
+            chargeUntil: performance.now() + 130,
+            launchUntil: performance.now() + 330,
+            startX: 26,
+            startY: 24,
+            targetX: forageX + forageMatrix[0].length / 2,
+            targetY: forageY + forageMatrix.length / 2
+          };
+          stoneInventory = Math.max(0, stoneInventory - 1);
+          stoneSelected = false;
+        }
         if (isTermite) termiteRustleUntilBySlot.set(slot, performance.now() + 140);
-        else if (!isRock) shrubRustleUntilBySlot.set(slot, performance.now() + 140);
+        else if (isRock) rockFlashUntilBySlot.set(slot, performance.now() + ROCK_HIT_FLASH_MS);
+        else shrubRustleUntilBySlot.set(slot, performance.now() + 140);
         const nextHp = currentHp - Math.ceil(baseBiteDamage());
         if (nextHp <= 0) {
           if (isTermite) {
