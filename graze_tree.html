@@ -625,8 +625,9 @@
     let treeOffset = 0;
     let movementMode = 'graze'; // graze | right | left
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
-    const stoneInventory = 99;
+    let stoneInventory = 99;
     let stoneSelected = false;
+    let slingshotFx = null; // {startedAt, chargeUntil, launchUntil, startX, startY, targetX, targetY}
     const treeTierAtIndex = (k) => {
       if (k === 0) return 4; // guarantee one visible level-4 tree for testing
       const normalized = ((k % 6) + 6) % 6;
@@ -703,6 +704,32 @@
       ctx.textBaseline = 'top';
       ctx.fillText(`${stoneInventory}`, scene.width - 12, 28);
       ctx.restore();
+    }
+
+    function drawSlingshotFx(ts, scale) {
+      if (!slingshotFx) return { x: 0, y: 0 };
+      if (ts >= slingshotFx.launchUntil) {
+        slingshotFx = null;
+        return { x: 0, y: 0 };
+      }
+      const neckShift = { x: 0, y: 0 };
+      if (ts < slingshotFx.chargeUntil) {
+        const chargeT = Math.max(0, Math.min(1, (ts - slingshotFx.startedAt) / Math.max(1, slingshotFx.chargeUntil - slingshotFx.startedAt)));
+        neckShift.x = -1.2 * chargeT;
+        neckShift.y = 0.8 * chargeT;
+      } else {
+        const launchT = Math.max(0, Math.min(1, (ts - slingshotFx.chargeUntil) / Math.max(1, slingshotFx.launchUntil - slingshotFx.chargeUntil)));
+        const eased = launchT * launchT;
+        const rockX = slingshotFx.startX + (slingshotFx.targetX - slingshotFx.startX) * eased;
+        const rockY = slingshotFx.startY + (slingshotFx.targetY - slingshotFx.startY) * eased - (1 - eased) * 3;
+        const spin = eased * Math.PI * 3;
+        ctx.save();
+        ctx.translate(rockX * scale, rockY * scale);
+        ctx.rotate(spin);
+        drawMatrix(rockStatic, -2.5, -2.5, scale * 0.5, rockPalette);
+        ctx.restore();
+      }
+      return neckShift;
     }
 
     function applySkyForTimeOfDay() {
@@ -880,7 +907,8 @@
         }
       }
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
-      const giraffeY = 20 + neckAdjusted.yAdjust;
+      const neckShift = drawSlingshotFx(ts, scale);
+      const giraffeY = 20 + neckAdjusted.yAdjust + neckShift.y;
       const wakandaLevel = wakanda2Input.checked ? 2 : (wakanda1Input.checked ? 1 : 0);
       if (wakandaLevel >= 2) {
         const glowX = (13 + Math.floor(giraffe[0].length / 2)) * scale;
@@ -913,8 +941,8 @@
         ctx.fill();
         ctx.restore();
       }
-      drawMatrixTransformed(neckAdjusted.matrix, 10, giraffeY, scale, wakandaLevel >= 1 ? palette.giraffeWakanda : palette.giraffe, movementMode === 'left');
-      drawSafariAccessories(neckAdjusted.matrix, 10, giraffeY, scale, movementMode === 'left');
+      drawMatrixTransformed(neckAdjusted.matrix, 10 + neckShift.x, giraffeY, scale, wakandaLevel >= 1 ? palette.giraffeWakanda : palette.giraffe, movementMode === 'left');
+      drawSafariAccessories(neckAdjusted.matrix, 10 + neckShift.x, giraffeY, scale, movementMode === 'left');
       drawStoneHud(scale);
 
       requestAnimationFrame(render);
@@ -1020,11 +1048,32 @@
         const distance = dx * dx + dy * dy;
 
         if (!target || distance < target.distance) {
-          target = { k, currentStage, distance };
+          target = { k, tier, treeX, currentStage, distance };
         }
       }
 
       if (!target) return;
+      if (stoneSelected && stoneInventory > 0) {
+        const targetTree =
+          target.tier === 4 ? treeLevel4ForStage(target.currentStage) :
+          target.tier === 3 ? treeLevel3ForStage(target.currentStage) :
+          target.tier === 2 ? treeLevel2ForStage(target.currentStage) :
+          treeForStage(target.currentStage);
+        const targetTreeY = target.tier === 4
+          ? level4TopYForBaseline(treeY, targetTree)
+          : treeY + (target.tier === 3 ? -16 : target.tier === 2 ? -10 : 0);
+        slingshotFx = {
+          startedAt: performance.now(),
+          chargeUntil: performance.now() + 130,
+          launchUntil: performance.now() + 330,
+          startX: 26,
+          startY: 24,
+          targetX: target.treeX + (target.tier === 4 ? targetTree[0].length * LEVEL4_STRETCH_X : targetTree[0].length) / 2,
+          targetY: targetTreeY + (target.tier === 4 ? targetTree.length * LEVEL4_STRETCH_Y : targetTree.length) / 2
+        };
+        stoneInventory = Math.max(0, stoneInventory - 1);
+        stoneSelected = false;
+      }
       const nextStage = Math.min(4, target.currentStage + 1);
       treeStageById.set(target.k, nextStage);
     });
