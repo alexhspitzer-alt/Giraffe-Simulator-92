@@ -788,8 +788,8 @@
       if (stage >= 4) return treeLevel4VariantsMirrored.depleted;
       return treeLevel4VariantsMirrored.full;
     }
-    const LEVEL4_STRETCH_X = 1.42;
-    const LEVEL4_STRETCH_Y = 2.36;
+    const LEVEL4_STRETCH_X = 1.5;
+    const LEVEL4_STRETCH_Y = 2.52;
     function level4TopYForBaseline(treeY, matrix) {
       const baselineY = treeY + treeVariantsMirrored.full.length - 1 - 7;
       return baselineY - Math.ceil(matrix.length * LEVEL4_STRETCH_Y) + 1;
