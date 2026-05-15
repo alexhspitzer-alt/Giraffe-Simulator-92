@@ -706,6 +706,19 @@
       ctx.restore();
     }
 
+    function stoneHudHitRect(scale) {
+      const hudScale = Math.max(1, scale - 1);
+      const iconX = (scene.width - 72) / hudScale;
+      const iconY = 26 / hudScale;
+      const textRightX = scene.width / scale;
+      const textLeftX = textRightX - 14;
+      const minX = Math.min(iconX, textLeftX) - 1.5;
+      const maxX = Math.max(iconX + rockStatic[0].length, textRightX) + 1.5;
+      const minY = iconY - 1.5;
+      const maxY = iconY + rockStatic.length + 1.5;
+      return { minX, maxX, minY, maxY };
+    }
+
     function drawSlingshotFx(ts, scale) {
       if (!slingshotFx) return { x: 0, y: 0 };
       if (ts >= slingshotFx.launchUntil) {
@@ -775,8 +788,8 @@
       if (stage >= 4) return treeLevel4VariantsMirrored.depleted;
       return treeLevel4VariantsMirrored.full;
     }
-    const LEVEL4_STRETCH_X = 1.5;
-    const LEVEL4_STRETCH_Y = 2.52;
+    const LEVEL4_STRETCH_X = 1.42;
+    const LEVEL4_STRETCH_Y = 2.36;
     function level4TopYForBaseline(treeY, matrix) {
       const baselineY = treeY + treeVariantsMirrored.full.length - 1 - 7;
       return baselineY - Math.ceil(matrix.length * LEVEL4_STRETCH_Y) + 1;
@@ -910,8 +923,11 @@
       const neckShift = drawSlingshotFx(ts, scale);
       const giraffeY = 20 + neckAdjusted.yAdjust + neckShift.y;
       const wakandaLevel = wakanda2Input.checked ? 2 : (wakanda1Input.checked ? 1 : 0);
+      const facingLeft = movementMode === 'left';
       if (wakandaLevel >= 2) {
-        const glowX = (13 + Math.floor(giraffe[0].length / 2)) * scale;
+        const centerX = 13 + Math.floor(giraffe[0].length / 2);
+        const mirroredCenterX = 10 + (giraffe[0].length - (centerX - 10));
+        const glowX = ((facingLeft ? mirroredCenterX : centerX) + neckShift.x) * scale;
         const glowY = (giraffeY + 2 + Math.floor(neckAdjusted.matrix.length / 2)) * scale;
         const glowRadius = Math.max(16, Math.floor(scale * 13));
         const glow = ctx.createRadialGradient(glowX, glowY, Math.floor(glowRadius * 0.2), glowX, glowY, glowRadius);
@@ -926,7 +942,9 @@
         ctx.restore();
       }
       if (stoneSelected) {
-        const glowX = (10 + 18) * scale;
+        const stoneAnchorX = 10 + 18;
+        const mirroredStoneX = 10 + (giraffe[0].length - (stoneAnchorX - 10));
+        const glowX = ((facingLeft ? mirroredStoneX : stoneAnchorX) + neckShift.x) * scale;
         const glowY = (giraffeY + 5) * scale;
         const glowRadius = Math.max(16, Math.floor(scale * 10));
         const pulse = 0.35 + 0.25 * Math.sin(ts / 80);
@@ -973,14 +991,10 @@
       const rect = scene.getBoundingClientRect();
       const xTile = (event.clientX - rect.left) / scale;
       const yTile = (event.clientY - rect.top) / scale;
-      const hudScale = Math.max(1, scale - 1);
-      const iconX = (scene.width - 72) / hudScale;
-      const iconY = 26 / hudScale;
-      const iconHitPaddingX = 2.5;
-      const iconHitPaddingY = 2.5;
+      const stoneHudRect = stoneHudHitRect(scale);
       if (
-        xTile >= iconX - iconHitPaddingX && xTile < iconX + rockStatic[0].length + iconHitPaddingX &&
-        yTile >= iconY - iconHitPaddingY && yTile < iconY + rockStatic.length + iconHitPaddingY
+        xTile >= stoneHudRect.minX && xTile < stoneHudRect.maxX &&
+        yTile >= stoneHudRect.minY && yTile < stoneHudRect.maxY
       ) {
         stoneSelected = !stoneSelected;
         return;
