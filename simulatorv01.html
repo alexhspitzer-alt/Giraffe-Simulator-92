@@ -23,10 +23,10 @@
       padding: 18px;
       transition: border-color 120ms ease, box-shadow 120ms ease;
     }
-    .stage.turbo-glow {
-      animation: turboGoldFlash 420ms linear infinite;
+    .stage.ruminate-glow {
+      animation: ruminateGoldFlash 420ms linear infinite;
     }
-    @keyframes turboGoldFlash {
+    @keyframes ruminateGoldFlash {
       0%, 100% { border-color: rgba(217, 174, 59, 0.2); box-shadow: 0 0 0 0 rgba(217, 174, 59, 0.0); }
       50% { border-color: rgba(217, 174, 59, 0.95); box-shadow: 0 0 14px 2px rgba(217, 174, 59, 0.35); }
     }
@@ -701,8 +701,8 @@
     const TURBO_SPEED_MULTIPLIER = 2;
     const TURBO_FPS = 10;
     const TURBO_TREE_RANGE_X = 25;
-    let turboUntil = 0;
-    let turboWasActive = false;
+    let ruminateUntil = 0;
+    let ruminateWasActive = false;
     let blessTheRainsRestoreAt = 0;
     let lastChompFxAt = 0;
     const GIRAFFE_X = 10;
@@ -985,7 +985,7 @@
     function movementSpeedPerFrame() {
       const legDayLevel = playerUpgradeLevels['leg-day'] || 0;
       const baseSpeed = 0.2 * Math.pow(1.05, legDayLevel);
-      return isTurboActive() ? baseSpeed * TURBO_SPEED_MULTIPLIER : baseSpeed;
+      return isRuminateActive() ? baseSpeed * TURBO_SPEED_MULTIPLIER : baseSpeed;
     }
 
     function wakandaForageverLevel() {
@@ -1073,17 +1073,17 @@
       return 0;
     }
 
-    function isTurboActive(nowTs = performance.now()) {
-      return nowTs < turboUntil;
+    function isRuminateActive(nowTs = performance.now()) {
+      return nowTs < ruminateUntil;
     }
 
-    function activateTurbo() {
+    function activateRuminate() {
       if (treeProgressLiters < RUMEN_GOLD_THRESHOLD_LITERS) return false;
       const litersAtActivation = treeProgressLiters;
       const durationSeconds = Math.max(6, Math.min(10, Math.floor(litersAtActivation / 5)));
       const bungulateLevel = playerUpgradeLevels['bungulate'] || 0;
-      const turboDurationSeconds = durationSeconds * (bungulateLevel > 0 ? 2 : 1);
-      turboUntil = performance.now() + turboDurationSeconds * 1000;
+      const ruminateDurationSeconds = durationSeconds * (bungulateLevel > 0 ? 2 : 1);
+      ruminateUntil = performance.now() + ruminateDurationSeconds * 1000;
       treeProgressLiters = 0;
       treeProgressBaseLiters = 0;
       treeProgressBaseRemainder = 0;
@@ -1224,19 +1224,19 @@
       if (treeProgress) treeProgress.value = treeProgressLiters;
       if (treeProgressLabel) treeProgressLabel.textContent = `${treeProgressLiters} / ${RUMEN_MAX_LITERS} L`;
       if (treeProgress) treeProgress.classList.toggle('gold', treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS);
-      const turboNow = isTurboActive();
+      const ruminateNow = isRuminateActive();
       if (rumenHint) {
-        if (turboNow) rumenHint.textContent = 'Turbo active';
-        else if (treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS) rumenHint.textContent = 'Click Rumen to activate Turbo';
+        if (ruminateNow) rumenHint.textContent = 'RUMINATION';
+        else if (treeProgressLiters >= RUMEN_GOLD_THRESHOLD_LITERS) rumenHint.textContent = 'Click to activate Ruminate.';
         else if (treeProgressLiters <= 5) rumenHint.textContent = 'click on leaves to forage';
         else rumenHint.textContent = 'eat 30L to activate Ruminate';
       }
-      if (sceneFrame) sceneFrame.classList.toggle('turbo-glow', turboNow);
+      if (sceneFrame) sceneFrame.classList.toggle('ruminate-glow', ruminateNow);
     }
 
     function advanceTreeProgress() {
       const cudStormLevel = playerUpgradeLevels['cud-storm'] || 0;
-      const ruminationBuildMultiplier = isTurboActive() ? (1 + 0.25 * cudStormLevel) : 1;
+      const ruminationBuildMultiplier = isRuminateActive() ? (1 + 0.25 * cudStormLevel) : 1;
       const effectiveBaseGain = 1 * ruminationBuildMultiplier;
       const carriedGain = effectiveBaseGain + treeProgressBaseRemainder;
       const wholeBaseGain = Math.floor(carriedGain);
@@ -1379,19 +1379,19 @@
 
     function render(ts) {
       const scale = Math.max(1, Math.min(18, SIM_SCALE));
-      const fps = isTurboActive(ts) ? TURBO_FPS : Math.max(1, Math.min(12, SIM_FPS));
+      const fps = isRuminateActive(ts) ? TURBO_FPS : Math.max(1, Math.min(12, SIM_FPS));
       const frameTime = 1000 / fps;
       const moving = movementMode === 'right' || movementMode === 'left';
       const activeFrames = moving ? walkFrames : grazeFrames;
       const baseStage = baseTreeStage();
-      const turboActiveNow = isTurboActive(ts);
-      if (turboActiveNow !== turboWasActive) {
-        if (!turboActiveNow && (playerUpgradeLevels['bless-the-rains'] || 0) > 0) {
+      const ruminateActiveNow = isRuminateActive(ts);
+      if (ruminateActiveNow !== ruminateWasActive) {
+        if (!ruminateActiveNow && (playerUpgradeLevels['bless-the-rains'] || 0) > 0) {
           blessTheRainsRestoreAt = ts + 1000;
-        } else if (turboActiveNow) {
+        } else if (ruminateActiveNow) {
           blessTheRainsRestoreAt = 0;
         }
-        turboWasActive = turboActiveNow;
+        ruminateWasActive = ruminateActiveNow;
         syncTreeProgressUi();
       }
       if (playing && blessTheRainsRestoreAt > 0 && ts >= blessTheRainsRestoreAt) {
@@ -1707,15 +1707,15 @@
       const giraffeMidX = Math.floor((giraffeFrontX + giraffeBackX) / 2);
       const trunkDistance = Math.abs(treeTrunkX - giraffeMidX);
       const wakandaRangeMultiplier = wakandaForageverLevel() >= 2 ? 2 : 1;
-      const treeInteractRange = (isTurboActive() ? TURBO_TREE_RANGE_X : TREE_INTERACT_RANGE_X) * wakandaRangeMultiplier;
+      const treeInteractRange = (isRuminateActive() ? TURBO_TREE_RANGE_X : TREE_INTERACT_RANGE_X) * wakandaRangeMultiplier;
       if (trunkDistance > treeInteractRange) return;
 
       const hpKey = `${k}:${currentStage}`;
       const currentHp = treeStageHpById.has(hpKey) ? treeStageHpById.get(hpKey) : maxHpForStage(currentStage, tier);
       const critLevel = playerUpgradeLevels['crits-r-us'] || 0;
       const critChance = Math.max(0, critLevel * 0.02);
-      const turboCrit = isTurboActive();
-      const critHit = turboCrit || Math.random() < critChance;
+      const ruminateCrit = isRuminateActive();
+      const critHit = ruminateCrit || Math.random() < critChance;
       const damage = Math.ceil(baseBiteDamage() * (critHit ? 3 : 1));
       const nextHp = currentHp - damage;
       if (critHit) {
@@ -1734,9 +1734,9 @@
           lastChompFxAt = now;
         }
       }
-      const turboActive = isTurboActive();
+      const ruminateActive = isRuminateActive();
       const rustleDurationMs = RUSTLE_MS;
-      const advanceDelayMs = turboActive ? 0 : ADVANCE_DELAY_AFTER_RUSTLE_MS;
+      const advanceDelayMs = ruminateActive ? 0 : ADVANCE_DELAY_AFTER_RUSTLE_MS;
       const rustleUntil = performance.now() + rustleDurationMs;
       treeRustleUntilById.set(k, rustleUntil);
       if (nextHp > 0) {
@@ -1760,7 +1760,7 @@
 
     rumenFrame.addEventListener('click', () => {
       if (!playing) return;
-      activateTurbo();
+      activateRuminate();
       syncTreeProgressUi();
     });
 
