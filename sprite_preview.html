@@ -89,11 +89,6 @@ function draw() {
   legend.appendChild(chip);
 }
 
-spriteSelect.addEventListener('change', draw);
-scaleInput.addEventListener('input', draw);
-spriteSelect.selectedIndex = 0;
-draw();
-
 const JEEP_FRONT_50_MATRIX = [
 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -146,6 +141,11 @@ const JEEP_FRONT_50_MATRIX = [
 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 ];
+
+spriteSelect.addEventListener('change', draw);
+scaleInput.addEventListener('input', draw);
+spriteSelect.selectedIndex = 0;
+draw();
 </script>
 </body>
 </html>
