@@ -706,13 +706,14 @@
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
     ];
     function drawJeepScaled(xOff, yOff, scale) {
-      const stretch = 31 / 50; // roughly level-2 tree width
+      const stretchX = 31 / 50; // roughly level-2 tree width
+      const stretchY = stretchX * (50 / JEEP_FRONT_50_MATRIX.length); // preserve original 50x50 aspect
       for (let r = 0; r < JEEP_FRONT_50_MATRIX.length; r++) {
         for (let c = 0; c < JEEP_FRONT_50_MATRIX[0].length; c++) {
           const v = JEEP_FRONT_50_MATRIX[r][c];
           if (!v) continue;
           ctx.fillStyle = jeepPalette[v];
-          ctx.fillRect((xOff + c * stretch) * scale, (yOff + r * stretch) * scale, scale * stretch, scale * stretch);
+          ctx.fillRect((xOff + c * stretchX) * scale, (yOff + r * stretchY) * scale, scale * stretchX, scale * stretchY);
         }
       }
     }
@@ -987,7 +988,7 @@
           drawMatrix(tree, baseTreeX + k * tilePeriod, treeY, scale, palette.tree);
         }
       }
-      drawJeepScaled(36, rows - 2 - (JEEP_FRONT_50_MATRIX.length * (31 / 50)), scale);
+      drawJeepScaled(36, rows - 2 - (JEEP_FRONT_50_MATRIX.length * ((31 / 50) * (50 / JEEP_FRONT_50_MATRIX.length))), scale);
       const neckAdjusted = applyNeckBoost(activeFrames[frame], neckLevel);
       const neckShift = drawSlingshotFx(ts, scale);
       const giraffeY = 20 + neckAdjusted.yAdjust + neckShift.y;
