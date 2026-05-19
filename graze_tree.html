@@ -712,10 +712,22 @@
         for (let c = 0; c < JEEP_FRONT_50_MATRIX[0].length; c++) {
           const v = JEEP_FRONT_50_MATRIX[r][c];
           if (!v) continue;
+          if (v === 3) continue; // remove windshield for simpler silhouette
           ctx.fillStyle = jeepPalette[v];
           ctx.fillRect((xOff + c * stretchX) * scale, (yOff + r * stretchY) * scale, scale * stretchX, scale * stretchY);
         }
       }
+      // Reinforce visible tires at the base.
+      const tireY = (yOff + JEEP_FRONT_50_MATRIX.length * stretchY - 1.6) * scale;
+      const tireW = Math.max(6, scale * 4.6 * stretchX);
+      const tireH = Math.max(4, scale * 2.1 * stretchY);
+      const leftX = (xOff + 7.5 * stretchX) * scale;
+      const rightX = (xOff + 37.9 * stretchX) * scale;
+      ctx.save();
+      ctx.fillStyle = '#111111';
+      ctx.fillRect(leftX, tireY, tireW, tireH);
+      ctx.fillRect(rightX, tireY, tireW, tireH);
+      ctx.restore();
     }
 
     function drawStoneHud(scale) {
