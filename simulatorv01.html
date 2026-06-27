@@ -667,6 +667,7 @@
     let last = 0;
     let treeOffset = 0;
     let movementMode = 'graze'; // graze | right | left
+    let movementInputSource = 'button';
     let keyLeftDown = false;
     let keyRightDown = false;
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
@@ -1041,16 +1042,21 @@
       }
     }
 
+    const GLOBAL_FORAGING_XP_MULTIPLIER = 1.10;
+    const HIGHER_TIER_TREE_XP_MULTIPLIER = 1.15;
+    const BUTTON_SCROLL_HITBOX_PADDING_TILES = 1.5;
+
     function foragingXpMultiplier() {
       const noodleLevel = playerUpgradeLevels['use-ur-noodle'] || 0;
-      return Math.pow(1.10, noodleLevel);
+      return GLOBAL_FORAGING_XP_MULTIPLIER * Math.pow(1.10, noodleLevel);
     }
 
     function treeTierBaseForagingXp(tier) {
-      if (tier === 4) return 900;
-      if (tier === 2) return 42;
-      if (tier === 3) return 112;
-      return 14;
+      let baseXp = 14;
+      if (tier === 4) baseXp = 900;
+      else if (tier === 2) baseXp = 42;
+      else if (tier === 3) baseXp = 112;
+      return tier >= 2 ? baseXp * HIGHER_TIER_TREE_XP_MULTIPLIER : baseXp;
     }
 
     function loraxTaxStageXpPercents() {
@@ -1161,6 +1167,7 @@
     }
 
     function syncMovementFromKeyboard() {
+      movementInputSource = 'keyboard';
       if (keyLeftDown && !keyRightDown) {
         movementMode = 'left';
       } else if (keyRightDown && !keyLeftDown) {
@@ -1506,6 +1513,7 @@
     walkRightBtn.addEventListener('click', () => {
       keyLeftDown = false;
       keyRightDown = false;
+      movementInputSource = 'button';
       movementMode = movementMode === 'right' ? 'graze' : 'right';
       walkRightBtn.textContent = movementMode === 'right' ? 'Stop' : 'Right';
       walkLeftBtn.textContent = 'Left';
@@ -1515,6 +1523,7 @@
     walkLeftBtn.addEventListener('click', () => {
       keyLeftDown = false;
       keyRightDown = false;
+      movementInputSource = 'button';
       movementMode = movementMode === 'left' ? 'graze' : 'left';
       walkLeftBtn.textContent = movementMode === 'left' ? 'Stop' : 'Left';
       walkRightBtn.textContent = 'Right';
@@ -1658,7 +1667,15 @@
           treeForStage(currentStage);
         const localTestX = tier === 4 ? Math.floor(localX / LEVEL4_STRETCH_X) : localX;
         const localTestY = tier === 4 ? Math.floor(localY / LEVEL4_STRETCH_Y) : localY;
-        if (localTestX < 0 || localTestX >= currentTree[0].length || localTestY < 0 || localTestY >= currentTree.length) continue;
+        const candidateHitboxPadding = movementInputSource === 'button' && (movementMode === 'left' || movementMode === 'right')
+          ? BUTTON_SCROLL_HITBOX_PADDING_TILES
+          : 0;
+        if (
+          localTestX < -candidateHitboxPadding ||
+          localTestX >= currentTree[0].length + candidateHitboxPadding ||
+          localTestY < -candidateHitboxPadding ||
+          localTestY >= currentTree.length + candidateHitboxPadding
+        ) continue;
         const treeCenterX = treeX + (tier === 4 ? currentTree[0].length * LEVEL4_STRETCH_X : currentTree[0].length) / 2;
         const treeCenterY = effectiveTreeY + (tier === 4 ? currentTree.length * LEVEL4_STRETCH_Y : currentTree.length) / 2;
         const dx = xTile - treeCenterX;
@@ -1690,10 +1707,15 @@
       }
 
       if (maxX === -1) return; // already depleted
-      const hitLeaf = isLeafValue(currentTree[localY][localX]);
+      const hitLeaf = localY >= 0 && localY < currentTree.length && localX >= 0 && localX < currentTree[0].length
+        ? isLeafValue(currentTree[localY][localX])
+        : false;
+      const hitboxPadding = movementInputSource === 'button' && (movementMode === 'left' || movementMode === 'right')
+        ? BUTTON_SCROLL_HITBOX_PADDING_TILES
+        : 0;
       const hitCanopyBounds =
-        localX >= minX && localX <= maxX &&
-        localY >= minY && localY <= maxY;
+        localX >= minX - hitboxPadding && localX <= maxX + hitboxPadding &&
+        localY >= minY - hitboxPadding && localY <= maxY + hitboxPadding;
       if (!hitLeaf && !hitCanopyBounds) return;
       const neckLevel = playerUpgradeLevels['long-horse'] || 0;
       if (tier === 4 && neckLevel < 3) return;
