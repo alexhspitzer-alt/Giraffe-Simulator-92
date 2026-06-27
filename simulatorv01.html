@@ -426,6 +426,8 @@
       dusk: 'linear-gradient(#3f365b, #b35f6a 66%, #41593d 66%, #41593d)',
       night: 'linear-gradient(#060b1e, #0f1734 66%, #243a2b 66%, #243a2b)'
     };
+    const SKY_SEQUENCE = ['dawn', 'noon', 'dusk', 'night'];
+    const SKY_ADVANCE_PLAY_MS = 200000;
 
     const cloneMatrix = (matrix) => matrix.map((row) => [...row]);
 
@@ -689,6 +691,9 @@
     const nextUpgradeCards = progressionConfig.nextUpgradeCards || (() => []);
     const playerUpgradeLevels = {};
     let activeSkyTime = '';
+    let activeSkyIndex = 0;
+    let skyPlayElapsedMs = 0;
+    let lastSkyTickTs = 0;
     let chompFx = null; // {until, at, x, y}
     let treeProgressLiters = 0;
     let treeProgressBaseLiters = 0;
@@ -1188,11 +1193,31 @@
       return 'night';
     }
 
+    function setSkyTime(skyTime) {
+      const nextSkyTime = skyByTime[skyTime] ? skyTime : 'noon';
+      activeSkyIndex = Math.max(0, SKY_SEQUENCE.indexOf(nextSkyTime));
+      if (nextSkyTime === activeSkyTime) return;
+      activeSkyTime = nextSkyTime;
+      scene.style.background = skyByTime[nextSkyTime];
+    }
+
     function applySkyFromSystemTime() {
-      const skyTime = skyTimeFromSystemHour();
-      if (skyTime === activeSkyTime) return;
-      activeSkyTime = skyTime;
-      scene.style.background = skyByTime[skyTime] || skyByTime.noon;
+      setSkyTime(skyTimeFromSystemHour());
+    }
+
+    function advanceSkyByPlayTime(ts) {
+      if (!lastSkyTickTs) {
+        lastSkyTickTs = ts;
+        return;
+      }
+      const elapsedMs = Math.max(0, ts - lastSkyTickTs);
+      lastSkyTickTs = ts;
+      if (!playing) return;
+      skyPlayElapsedMs += elapsedMs;
+      while (skyPlayElapsedMs >= SKY_ADVANCE_PLAY_MS) {
+        skyPlayElapsedMs -= SKY_ADVANCE_PLAY_MS;
+        setSkyTime(SKY_SEQUENCE[(activeSkyIndex + 1) % SKY_SEQUENCE.length]);
+      }
     }
 
     function rustleOffsetForTree(k, nowTs) {
@@ -1385,6 +1410,7 @@
     }
 
     function render(ts) {
+      advanceSkyByPlayTime(ts);
       const scale = Math.max(1, Math.min(18, SIM_SCALE));
       const fps = isRuminateActive(ts) ? TURBO_FPS : Math.max(1, Math.min(12, SIM_FPS));
       const frameTime = 1000 / fps;
