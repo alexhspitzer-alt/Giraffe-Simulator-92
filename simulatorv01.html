@@ -1038,6 +1038,13 @@
       const molarLevel = playerUpgradeLevels['molar-master'] || 0;
       return 6 * Math.pow(1.30, molarLevel);
     }
+    function herbimoreLevel() {
+      return playerUpgradeLevels['herbimore'] || 0;
+    }
+    function biteDamageForForageable(isNonFoliage = false) {
+      const herbimoreDamageMultiplier = isNonFoliage && herbimoreLevel() > 0 ? 3 : 1;
+      return Math.ceil(baseBiteDamage() * herbimoreDamageMultiplier);
+    }
     function movementSpeedPerFrame() {
       const legDayLevel = playerUpgradeLevels['leg-day'] || 0;
       const baseSpeed = 0.2 * Math.pow(1.05, legDayLevel);
@@ -1345,16 +1352,16 @@
       return matrix.length >= 5 ? 3 : 1;
     }
     function termiteMaxHpForMatrix(matrix) {
-      return matrix.length >= 8 ? 24 : 11;
+      return matrix.length >= 8 ? 48 : 22;
     }
     function termiteXpRewardForMatrix(matrix) {
-      return matrix.length >= 8 ? 24 : 11;
+      return matrix.length >= 8 ? 48 : 22;
     }
     function rockMatrixForSlot(slot) {
       return pseudoRandom01(slot + 1703) < 0.3 ? rockLarge : rockStatic;
     }
     function rockMaxHpForMatrix(matrix) {
-      return matrix.length >= 7 ? 111 : 47;
+      return matrix.length >= 7 ? 167 : 71;
     }
     function rockStoneRewardForMatrix(matrix) {
       return matrix.length >= 7 ? 15 : 5;
@@ -1694,7 +1701,7 @@
         if (isTermite) termiteRustleUntilBySlot.set(slot, performance.now() + 140);
         else if (isRock) rockFlashUntilBySlot.set(slot, performance.now() + ROCK_HIT_FLASH_MS);
         else shrubRustleUntilBySlot.set(slot, performance.now() + 140);
-        const nextHp = currentHp - Math.ceil(baseBiteDamage());
+        const nextHp = currentHp - biteDamageForForageable(isTermite || isRock);
         if (nextHp <= 0) {
           if (isTermite) {
             termiteHpBySlot.set(slot, 0);
