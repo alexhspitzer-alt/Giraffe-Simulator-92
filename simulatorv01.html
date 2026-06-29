@@ -33,7 +33,7 @@
     }
     .title-art {
       margin: 0;
-      padding: 0 4px 4px;
+      padding: 0 4px 4px 12px;
       overflow-x: auto;
       border: 0;
       border-radius: 0;
@@ -44,6 +44,20 @@
       line-height: 0.98;
       white-space: pre;
       text-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
+    }
+    .title-art-number {
+      color: #E2B24A;
+      background: #E2B24A;
+      background-image:
+        radial-gradient(circle at 20% 30%, #8A4E1F 0 9%, transparent 10%),
+        radial-gradient(circle at 70% 22%, #8A4E1F 0 8%, transparent 9%),
+        radial-gradient(circle at 44% 72%, #8A4E1F 0 10%, transparent 11%),
+        radial-gradient(circle at 84% 68%, #8A4E1F 0 7%, transparent 8%);
+      background-size: 34px 24px;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: none;
     }
     .stage {
       border: 2px solid transparent;
@@ -164,16 +178,17 @@
      \\\\\\  \\\\\\  \\\\      \\\\  \\\\\\   \\\\\\\\  \\\\\\     \\\\    \\\\\\   \\\\\\\\
       \\\\\\  \\\\\\  \\\\      \\\\  \\\\\\   \\\\\\\\  \\\\\\     \\\\    \\\\\\   \\\\\\\\
 
-       /$$$$$$   /$$$$$$
-      /$$__  $$ /$$__  $$
-     | $$  \ $$|__/  \ $$
-     |  $$$$$$$  /$$$$$$/
-      \____  $$ /$$____/
-      /$$  \ $$| $$
-     |  $$$$$$/| $$$$$$$$
-      \______/ |________/
-          \\\\\\  \\\\\\\\
-           \\\\\\  \\\\\\\\</pre>
+                    <span class="title-art-number">/$$$$$$   /$$$$$$
+                   /$$__  $$ /$$__  $$
+                  | $$  \ $$|__/  \ $$
+                  |  $$$$$$$  /$$$$$$/
+                   \____  $$ /$$____/
+                   /$$  \ $$| $$
+                  |  $$$$$$/| $$$$$$$$
+                   \______/ |________/
+                       \\\\\\  \\\\\\\\
+                        \\\\\\  \\\\\\\\
+</span></pre>
     <section id="sceneFrame" class="stage">
       <canvas id="scene" width="700" height="500"></canvas>
     </section>
