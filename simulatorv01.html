@@ -9,18 +9,19 @@
       margin: 0;
       min-height: 100vh;
       display: grid;
-      place-items: center;
-      background: #12161f;
+      justify-items: center;
+      align-items: start;
+      background: #0f1624;
       color: #e7edf7;
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      padding: 20px;
+      padding: 6px;
     }
     .wrap {
       width: min(980px, 100%);
-      background: #1a2030;
-      border: 1px solid #2b3750;
-      border-radius: 12px;
-      padding: 18px;
+      background: #0f1624;
+      border: 1px solid #2e3c58;
+      border-radius: 10px;
+      padding: 8px;
       transition: border-color 120ms ease, box-shadow 120ms ease;
     }
     .stage.ruminate-glow {
@@ -30,22 +31,35 @@
       0%, 100% { border-color: rgba(217, 174, 59, 0.2); box-shadow: 0 0 0 0 rgba(217, 174, 59, 0.0); }
       50% { border-color: rgba(217, 174, 59, 0.95); box-shadow: 0 0 14px 2px rgba(217, 174, 59, 0.35); }
     }
-    .top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
+    .title-art {
+      margin: 0;
+      padding: 0 4px 4px;
+      overflow-x: auto;
+      border: 0;
+      border-radius: 0;
+      background: #0f1624;
+      color: #f5f7fb;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: clamp(0.24rem, 0.82vw, 0.54rem);
+      line-height: 0.98;
+      white-space: pre;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
     }
-    a { color: #8fc4ff; }
+    .title-art-number {
+      color: #F0C85A;
+      text-shadow: none;
+    }
+    .title-art-spot {
+      color: #A6652A;
+    }
     .stage {
       border: 2px solid transparent;
       border-radius: 10px;
-      padding: 12px;
+      padding: 0;
       background: #0f1624;
       display: grid;
       place-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       transition: border-color 120ms ease, box-shadow 120ms ease;
     }
     canvas {
@@ -134,11 +148,39 @@
 </head>
 <body>
   <main class="wrap">
-    <div class="top">
-      <h1>Giraffe Simulator v01</h1>
-      <a href="./index.html">← Back to sprite preview</a>
-    </div>
+    <pre class="title-art" aria-label="Giraffe Simulator 92 ASCII art">
+  /$$$$$$  /$$$$$$ /$$$$$$$   /$$$$$$  /$$$$$$$$ /$$$$$$$$ /$$$$$$$$
+ /$$__  $$|_  $$_/| $$__  $$ /$$__  $$| $$_____/| $$_____/| $$_____/
+| $$  \__/  | $$  | $$  \ $$| $$  \ $$| $$      | $$      | $$
+| $$ /$$$$  | $$  | $$$$$$$/| $$$$$$$$| $$$$$   | $$$$$   | $$$$$
+| $$|_  $$  | $$  | $$__  $$| $$__  $$| $$__/   | $$__/   | $$__/
+| $$  \ $$  | $$  | $$  \ $$| $$  | $$| $$      | $$      | $$
+|  $$$$$$/ /$$$$$$| $$  | $$| $$  | $$| $$      | $$      | $$$$$$$$
+ \______/ |______/|__/  |__/|__/  |__/|__/      |__/      |________/
+     \\\\\\  \\\\\\  \\\\\\\\   \\\\\\   \\\\\\\\  \\\\\\\\  \\\\\\\\
+      \\\\\\  \\\\\\  \\\\\\\\   \\\\\\   \\\\\\\\  \\\\\\\\  \\\\\\\\
 
+ /$$$$$$  /$$$$$$ /$$      /$$ /$$   /$$ /$$        /$$$$$$  /$$$$$$$$ /$$$$$$  /$$$$$$$
+/$$__  $$|_  $$_/| $$$    /$$$| $$  | $$| $$       /$$__  $$|__  $$__//$$__  $$| $$__  $$
+| $$  \__/  | $$  | $$$$  /$$$$| $$  | $$| $$      | $$  \ $$   | $$  | $$  \ $$| $$  \ $$
+|  $$$$$$   | $$  | $$ $$/$$ $$| $$  | $$| $$      | $$$$$$$$   | $$  | $$  | $$| $$$$$$$/
+ \____  $$  | $$  | $$  $$$| $$| $$  | $$| $$      | $$__  $$   | $$  | $$  | $$| $$__  $$
+ /$$  \ $$  | $$  | $$\  $ | $$| $$  | $$| $$      | $$  | $$   | $$  | $$  | $$| $$  \ $$
+|  $$$$$$/ /$$$$$$| $$ \/  | $$|  $$$$$$/| $$$$$$$$| $$  | $$   | $$  |  $$$$$$/| $$  | $$
+ \______/ |______/|__/     |__/ \______/ |________/|__/  |__/   |__/   \______/ |__/  |__/
+     \\\\\\  \\\\\\  \\\\      \\\\  \\\\\\   \\\\\\\\  \\\\\\     \\\\    \\\\\\   \\\\\\\\
+      \\\\\\  \\\\\\  \\\\      \\\\  \\\\\\   \\\\\\\\  \\\\\\     \\\\    \\\\\\   \\\\\\\\
+
+                    <span class="title-art-number">/$$<span class="title-art-spot">$</span>$$$   /$<span class="title-art-spot">$</span>$$$$
+                   /$<span class="title-art-spot">$</span>__  $$ /<span class="title-art-spot">$</span>$__  $$
+                  | <span class="title-art-spot">$</span>$  \ $$|<span class="title-art-spot">_</span>_/  \ $$
+                  |  <span class="title-art-spot">$</span>$$$$$$  <span class="title-art-spot">/</span>$$$$$<span class="title-art-spot">$</span>/
+                   \____  <span class="title-art-spot">$</span>$ /$$_<span class="title-art-spot">_</span>__/
+                   /$$  <span class="title-art-spot">\</span> $$| $$
+                  <span class="title-art-spot">|</span>  $$$$$$<span class="title-art-spot">/</span>| $$$$<span class="title-art-spot">$</span>$$$
+                   \__<span class="title-art-spot">_</span>___/ |_<span class="title-art-spot">_</span>_____<span class="title-art-spot">_</span>/
+                       \\\\\<span class="title-art-spot">\</span>  \\\\\<span class="title-art-spot">\</span>\\
+                        \\\\<span class="title-art-spot">\</span>\  \\\\<span class="title-art-spot">\</span>\\\</span></pre>
     <section id="sceneFrame" class="stage">
       <canvas id="scene" width="700" height="500"></canvas>
     </section>
@@ -426,6 +468,8 @@
       dusk: 'linear-gradient(#3f365b, #b35f6a 66%, #41593d 66%, #41593d)',
       night: 'linear-gradient(#060b1e, #0f1734 66%, #243a2b 66%, #243a2b)'
     };
+    const SKY_SEQUENCE = ['dawn', 'noon', 'dusk', 'night'];
+    const SKY_ADVANCE_PLAY_MS = 200000;
 
     const cloneMatrix = (matrix) => matrix.map((row) => [...row]);
 
@@ -667,6 +711,7 @@
     let last = 0;
     let treeOffset = 0;
     let movementMode = 'graze'; // graze | right | left
+    let movementInputSource = 'button';
     let keyLeftDown = false;
     let keyRightDown = false;
     const treeStageById = new Map(); // k -> 0(full),1(75),2(50),3(25),4(0)
@@ -688,6 +733,9 @@
     const nextUpgradeCards = progressionConfig.nextUpgradeCards || (() => []);
     const playerUpgradeLevels = {};
     let activeSkyTime = '';
+    let activeSkyIndex = 0;
+    let skyPlayElapsedMs = 0;
+    let lastSkyTickTs = 0;
     let chompFx = null; // {until, at, x, y}
     let treeProgressLiters = 0;
     let treeProgressBaseLiters = 0;
@@ -982,6 +1030,13 @@
       const molarLevel = playerUpgradeLevels['molar-master'] || 0;
       return 6 * Math.pow(1.30, molarLevel);
     }
+    function herbimoreLevel() {
+      return playerUpgradeLevels['herbimore'] || 0;
+    }
+    function biteDamageForForageable(isNonFoliage = false) {
+      const herbimoreDamageMultiplier = isNonFoliage && herbimoreLevel() > 0 ? 3 : 1;
+      return Math.ceil(baseBiteDamage() * herbimoreDamageMultiplier);
+    }
     function movementSpeedPerFrame() {
       const legDayLevel = playerUpgradeLevels['leg-day'] || 0;
       const baseSpeed = 0.2 * Math.pow(1.05, legDayLevel);
@@ -1041,16 +1096,21 @@
       }
     }
 
+    const GLOBAL_FORAGING_XP_MULTIPLIER = 1.10;
+    const HIGHER_TIER_TREE_XP_MULTIPLIER = 1.15;
+    const BUTTON_SCROLL_HITBOX_PADDING_TILES = 1.5;
+
     function foragingXpMultiplier() {
       const noodleLevel = playerUpgradeLevels['use-ur-noodle'] || 0;
-      return Math.pow(1.10, noodleLevel);
+      return GLOBAL_FORAGING_XP_MULTIPLIER * Math.pow(1.10, noodleLevel);
     }
 
     function treeTierBaseForagingXp(tier) {
-      if (tier === 4) return 900;
-      if (tier === 2) return 42;
-      if (tier === 3) return 112;
-      return 14;
+      let baseXp = 14;
+      if (tier === 4) baseXp = 900;
+      else if (tier === 2) baseXp = 42;
+      else if (tier === 3) baseXp = 112;
+      return tier >= 2 ? baseXp * HIGHER_TIER_TREE_XP_MULTIPLIER : baseXp;
     }
 
     function loraxTaxStageXpPercents() {
@@ -1161,6 +1221,7 @@
     }
 
     function syncMovementFromKeyboard() {
+      movementInputSource = 'keyboard';
       if (keyLeftDown && !keyRightDown) {
         movementMode = 'left';
       } else if (keyRightDown && !keyLeftDown) {
@@ -1181,11 +1242,31 @@
       return 'night';
     }
 
+    function setSkyTime(skyTime) {
+      const nextSkyTime = skyByTime[skyTime] ? skyTime : 'noon';
+      activeSkyIndex = Math.max(0, SKY_SEQUENCE.indexOf(nextSkyTime));
+      if (nextSkyTime === activeSkyTime) return;
+      activeSkyTime = nextSkyTime;
+      scene.style.background = skyByTime[nextSkyTime];
+    }
+
     function applySkyFromSystemTime() {
-      const skyTime = skyTimeFromSystemHour();
-      if (skyTime === activeSkyTime) return;
-      activeSkyTime = skyTime;
-      scene.style.background = skyByTime[skyTime] || skyByTime.noon;
+      setSkyTime(skyTimeFromSystemHour());
+    }
+
+    function advanceSkyByPlayTime(ts) {
+      if (!lastSkyTickTs) {
+        lastSkyTickTs = ts;
+        return;
+      }
+      const elapsedMs = Math.max(0, ts - lastSkyTickTs);
+      lastSkyTickTs = ts;
+      if (!playing) return;
+      skyPlayElapsedMs += elapsedMs;
+      while (skyPlayElapsedMs >= SKY_ADVANCE_PLAY_MS) {
+        skyPlayElapsedMs -= SKY_ADVANCE_PLAY_MS;
+        setSkyTime(SKY_SEQUENCE[(activeSkyIndex + 1) % SKY_SEQUENCE.length]);
+      }
     }
 
     function rustleOffsetForTree(k, nowTs) {
@@ -1263,16 +1344,16 @@
       return matrix.length >= 5 ? 3 : 1;
     }
     function termiteMaxHpForMatrix(matrix) {
-      return matrix.length >= 8 ? 24 : 11;
+      return matrix.length >= 8 ? 48 : 22;
     }
     function termiteXpRewardForMatrix(matrix) {
-      return matrix.length >= 8 ? 24 : 11;
+      return matrix.length >= 8 ? 48 : 22;
     }
     function rockMatrixForSlot(slot) {
       return pseudoRandom01(slot + 1703) < 0.3 ? rockLarge : rockStatic;
     }
     function rockMaxHpForMatrix(matrix) {
-      return matrix.length >= 7 ? 111 : 47;
+      return matrix.length >= 7 ? 167 : 71;
     }
     function rockStoneRewardForMatrix(matrix) {
       return matrix.length >= 7 ? 15 : 5;
@@ -1378,6 +1459,7 @@
     }
 
     function render(ts) {
+      advanceSkyByPlayTime(ts);
       const scale = Math.max(1, Math.min(18, SIM_SCALE));
       const fps = isRuminateActive(ts) ? TURBO_FPS : Math.max(1, Math.min(12, SIM_FPS));
       const frameTime = 1000 / fps;
@@ -1506,6 +1588,7 @@
     walkRightBtn.addEventListener('click', () => {
       keyLeftDown = false;
       keyRightDown = false;
+      movementInputSource = 'button';
       movementMode = movementMode === 'right' ? 'graze' : 'right';
       walkRightBtn.textContent = movementMode === 'right' ? 'Stop' : 'Right';
       walkLeftBtn.textContent = 'Left';
@@ -1515,6 +1598,7 @@
     walkLeftBtn.addEventListener('click', () => {
       keyLeftDown = false;
       keyRightDown = false;
+      movementInputSource = 'button';
       movementMode = movementMode === 'left' ? 'graze' : 'left';
       walkLeftBtn.textContent = movementMode === 'left' ? 'Stop' : 'Left';
       walkRightBtn.textContent = 'Right';
@@ -1609,7 +1693,7 @@
         if (isTermite) termiteRustleUntilBySlot.set(slot, performance.now() + 140);
         else if (isRock) rockFlashUntilBySlot.set(slot, performance.now() + ROCK_HIT_FLASH_MS);
         else shrubRustleUntilBySlot.set(slot, performance.now() + 140);
-        const nextHp = currentHp - Math.ceil(baseBiteDamage());
+        const nextHp = currentHp - biteDamageForForageable(isTermite || isRock);
         if (nextHp <= 0) {
           if (isTermite) {
             termiteHpBySlot.set(slot, 0);
@@ -1658,7 +1742,15 @@
           treeForStage(currentStage);
         const localTestX = tier === 4 ? Math.floor(localX / LEVEL4_STRETCH_X) : localX;
         const localTestY = tier === 4 ? Math.floor(localY / LEVEL4_STRETCH_Y) : localY;
-        if (localTestX < 0 || localTestX >= currentTree[0].length || localTestY < 0 || localTestY >= currentTree.length) continue;
+        const candidateHitboxPadding = movementInputSource === 'button' && (movementMode === 'left' || movementMode === 'right')
+          ? BUTTON_SCROLL_HITBOX_PADDING_TILES
+          : 0;
+        if (
+          localTestX < -candidateHitboxPadding ||
+          localTestX >= currentTree[0].length + candidateHitboxPadding ||
+          localTestY < -candidateHitboxPadding ||
+          localTestY >= currentTree.length + candidateHitboxPadding
+        ) continue;
         const treeCenterX = treeX + (tier === 4 ? currentTree[0].length * LEVEL4_STRETCH_X : currentTree[0].length) / 2;
         const treeCenterY = effectiveTreeY + (tier === 4 ? currentTree.length * LEVEL4_STRETCH_Y : currentTree.length) / 2;
         const dx = xTile - treeCenterX;
@@ -1690,10 +1782,15 @@
       }
 
       if (maxX === -1) return; // already depleted
-      const hitLeaf = isLeafValue(currentTree[localY][localX]);
+      const hitLeaf = localY >= 0 && localY < currentTree.length && localX >= 0 && localX < currentTree[0].length
+        ? isLeafValue(currentTree[localY][localX])
+        : false;
+      const hitboxPadding = movementInputSource === 'button' && (movementMode === 'left' || movementMode === 'right')
+        ? BUTTON_SCROLL_HITBOX_PADDING_TILES
+        : 0;
       const hitCanopyBounds =
-        localX >= minX && localX <= maxX &&
-        localY >= minY && localY <= maxY;
+        localX >= minX - hitboxPadding && localX <= maxX + hitboxPadding &&
+        localY >= minY - hitboxPadding && localY <= maxY + hitboxPadding;
       if (!hitLeaf && !hitCanopyBounds) return;
       const neckLevel = playerUpgradeLevels['long-horse'] || 0;
       if (tier === 4 && neckLevel < 3) return;

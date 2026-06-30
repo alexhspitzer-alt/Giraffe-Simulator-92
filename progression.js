@@ -1,6 +1,7 @@
 (() => {
   const LEVEL_XP_BASE = 100;
   const LEVEL_XP_GROWTH_FACTOR = 1.65;
+  const LEVEL_4_PLUS_XP_REQUIREMENT_MULTIPLIER = 0.90;
 
   const UPGRADE_PATHS = [
     {
@@ -135,7 +136,11 @@
   ];
 
   function nextLevelXp(level) {
-    return Math.floor(LEVEL_XP_BASE * Math.pow(LEVEL_XP_GROWTH_FACTOR, Math.max(0, level - 1)));
+    const baseRequirement = Math.floor(LEVEL_XP_BASE * Math.pow(LEVEL_XP_GROWTH_FACTOR, Math.max(0, level - 1)));
+    const targetLevel = level + 1;
+    return targetLevel >= 4
+      ? Math.floor(baseRequirement * LEVEL_4_PLUS_XP_REQUIREMENT_MULTIPLIER)
+      : baseRequirement;
   }
 
   function romanNumeral(n) {
@@ -168,6 +173,7 @@
   window.PROGRESSION = {
     LEVEL_XP_BASE,
     LEVEL_XP_GROWTH_FACTOR,
+    LEVEL_4_PLUS_XP_REQUIREMENT_MULTIPLIER,
     nextLevelXp,
     nextUpgradeCards
   };
